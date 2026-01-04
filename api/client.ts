@@ -127,6 +127,26 @@ export const authAPI = {
       body: JSON.stringify({ token, password }),
     });
   },
+
+  async uploadProfilePicture(profilePicture: string): Promise<{ success: boolean; profilePicture: string }> {
+    return fetchAPI('/auth/profile-picture', {
+      method: 'PUT',
+      body: JSON.stringify({ profilePicture }),
+    });
+  },
+
+  async deleteProfilePicture(): Promise<{ success: boolean }> {
+    return fetchAPI('/auth/profile-picture', {
+      method: 'DELETE',
+    });
+  },
+
+  async deleteAccount(password: string): Promise<{ message: string }> {
+    return fetchAPI('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    });
+  },
 };
 
 // === OKR API ===

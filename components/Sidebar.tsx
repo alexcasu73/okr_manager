@@ -47,14 +47,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
     { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
     { id: 'okrs', label: 'Objectives', icon: ICONS.Target },
     { id: 'team', label: 'My Team', icon: ICONS.Team },
-    { id: 'reports', label: 'Analytics', icon: ICONS.Analytics },
-    // Admin menu - only visible to admins
-    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
   ];
 
   const bottomItems = [
-    { id: 'settings', label: 'Settings', icon: ICONS.Settings },
-    { id: 'help', label: 'Help', icon: <span className="text-xl font-bold flex items-center justify-center w-5 h-5 border border-gray-400 rounded-full text-[10px] text-gray-500">?</span> },
+    { id: 'reports', label: 'Analytics', icon: ICONS.Analytics },
+    // Admin menu - only visible to admins
+    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
+    { id: 'profile', label: 'Profilo', icon: ICONS.Settings },
   ];
 
   return (
@@ -97,20 +96,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
             />
           ))}
         </nav>
-      </div>
-
-      {/* Promo Card */}
-      <div className="bg-gray-100 rounded-3xl p-5 mb-6 relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="bg-black text-white w-8 h-8 flex items-center justify-center rounded-full mb-3 text-xs">OM</div>
-          <p className="text-sm font-semibold text-gray-800 mb-1">Boost Productivity</p>
-          <p className="text-xs text-gray-500 mb-4 leading-relaxed">Align your team goals and track success efficiently.</p>
-          <button className="bg-black text-white text-xs px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors">
-            Start Now
-          </button>
-        </div>
-        {/* Abstract shape decoration */}
-        <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-200 rounded-full opacity-50 blur-xl"></div>
       </div>
 
       <button

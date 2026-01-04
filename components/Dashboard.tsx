@@ -273,14 +273,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           }
           position="bottom"
         >
-          <Card className="relative overflow-hidden cursor-help w-full">
-            <div className="flex items-start justify-between">
-              <div>
+          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex flex-col justify-between h-full">
                 <p className="text-gray-500 text-sm font-medium">Obiettivi Totali</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</h3>
-                <p className="text-xs text-gray-400 mt-2">
-                  {stats.draft} in bozza
-                </p>
+                <h3 className="text-3xl font-bold text-gray-900">{stats.total}</h3>
+                <p className="text-xs text-gray-400">{stats.draft} in bozza</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-2xl">
                 <Target className="w-6 h-6 text-blue-600" />
@@ -301,14 +299,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           }
           position="bottom"
         >
-          <Card className="relative overflow-hidden cursor-help w-full">
-            <div className="flex items-start justify-between">
-              <div>
+          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex flex-col justify-between h-full flex-1 mr-3">
                 <p className="text-gray-500 text-sm font-medium">Progresso Medio</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.avgProgress}%</h3>
-                <div className="mt-2">
-                  <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
-                </div>
+                <h3 className="text-3xl font-bold text-gray-900">{stats.avgProgress}%</h3>
+                <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
               </div>
               <div className="p-3 bg-green-100 rounded-2xl">
                 <TrendingUp className="w-6 h-6 text-green-600" />
@@ -334,16 +330,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           }
           position="bottom"
         >
-          <Card className="relative overflow-hidden cursor-help w-full">
-            <div className="flex items-start justify-between">
-              <div>
+          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex flex-col justify-between h-full">
                 <p className="text-gray-500 text-sm font-medium">Ritmo Medio</p>
-                <h3 className={`text-3xl font-bold mt-1 ${getPaceColor(paceStats.avgPaceRatio)}`}>
+                <h3 className={`text-3xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
                   {Math.round(paceStats.avgPaceRatio * 100)}%
                 </h3>
-                <p className="text-xs text-gray-400 mt-2">
-                  {paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo
-                </p>
+                <p className="text-xs text-gray-400">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
               </div>
               <div className="p-3 bg-indigo-100 rounded-2xl">
                 <Gauge className="w-6 h-6 text-indigo-600" />
@@ -364,14 +358,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           }
           position="bottom"
         >
-          <Card className="relative overflow-hidden cursor-help w-full">
-            <div className="flex items-start justify-between">
-              <div>
+          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
+            <div className="flex items-start justify-between h-full">
+              <div className="flex flex-col justify-between h-full">
                 <p className="text-gray-500 text-sm font-medium">Completati</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.completed}</h3>
-                <p className="text-xs text-gray-400 mt-2">
-                  {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale
-                </p>
+                <h3 className="text-3xl font-bold text-gray-900">{stats.completed}</h3>
+                <p className="text-xs text-gray-400">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-2xl">
                 <CheckCircle2 className="w-6 h-6 text-purple-600" />
@@ -383,23 +375,23 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Status Distribution + Level Distribution */}
-        <div className="space-y-6">
-          {/* Status Pie Chart */}
-          <Card title="Distribuzione per Stato">
+        {/* First two columns - 2x2 grid */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Row 1 */}
+          <Card title="Distribuzione per Stato" className="h-[280px]">
             {stats.total === 0 ? (
-              <div className="h-48 flex items-center justify-center text-gray-400">
+              <div className="h-full flex items-center justify-center text-gray-400">
                 Nessun obiettivo
               </div>
             ) : (
-              <>
-                <div className="h-48 relative">
+              <div className="h-full flex flex-col">
+                <div className="flex-1 relative min-h-[120px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={statusDistribution}
-                        innerRadius={50}
-                        outerRadius={70}
+                        innerRadius={40}
+                        outerRadius={55}
                         paddingAngle={2}
                         dataKey="value"
                         stroke="none"
@@ -408,15 +400,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <RechartsTooltip />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                    <p className="text-xs text-gray-400">Totale</p>
+                    <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+                    <p className="text-[10px] text-gray-400">Totale</p>
                   </div>
                 </div>
-                <div className="space-y-2 mt-4">
+                <div className="space-y-2 pt-4 border-t border-gray-100">
                   {statusDistribution.map((status) => (
                     <div key={status.name} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
@@ -427,12 +418,47 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                     </div>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </Card>
 
-          {/* Level Distribution */}
-          <Card title="Obiettivi per Livello">
+          {/* Scadenze Imminenti - Row 1 */}
+          <Card title="Scadenze Imminenti" className="h-[280px]" action={
+            <span className="text-xs text-gray-400">Prossimi 14 giorni</span>
+          }>
+            {upcomingDeadlines.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                Nessuna scadenza imminente
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingDeadlines.slice(0, 3).map((obj) => {
+                  const daysLeft = getDaysUntilDue(obj.dueDate);
+                  const isUrgent = daysLeft <= 3;
+
+                  return (
+                    <div key={obj.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
+                      <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100' : 'bg-blue-100'}`}>
+                        <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600' : 'text-blue-600'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
+                        <p className="text-xs text-gray-400">{formatDate(obj.dueDate)}</p>
+                      </div>
+                      <div className={`text-xs font-medium px-2 py-1 rounded-lg ${
+                        isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Obiettivi per Livello - Row 2 */}
+          <Card title="Obiettivi per Livello" className="h-[280px]">
             <div className="space-y-3">
               {levelDistribution.map((level) => (
                 <div key={level.name} className="flex items-center gap-3">
@@ -456,157 +482,42 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
               ))}
             </div>
           </Card>
-        </div>
 
-        {/* Upcoming Deadlines + Critical KRs */}
-        <div className="space-y-6">
-          {/* Upcoming Deadlines */}
-          <Card title="Scadenze Imminenti" action={
-            <span className="text-xs text-gray-400">Prossimi 14 giorni</span>
-          }>
-            {upcomingDeadlines.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-sm">
-                Nessuna scadenza imminente
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {upcomingDeadlines.map((obj) => {
-                  const daysLeft = getDaysUntilDue(obj.dueDate);
-                  const isUrgent = daysLeft <= 3;
-
-                  return (
-                    <UITooltip
-                      key={obj.id}
-                      position="left"
-                      content={
-                        <div className="space-y-1 min-w-[180px]">
-                          <p className="font-medium">{obj.title}</p>
-                          <div className="text-[10px] text-gray-300 space-y-1">
-                            <p>📅 Scadenza: {new Date(obj.dueDate).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                            <p>📊 Progresso: {obj.progress}%</p>
-                            <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
-                            {isUrgent && <p className="text-yellow-300">⚠️ Scadenza urgente!</p>}
-                          </div>
-                        </div>
-                      }
-                    >
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-help">
-                        <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100' : 'bg-blue-100'}`}>
-                          <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600' : 'text-blue-600'}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
-                          <p className="text-xs text-gray-400">{formatDate(obj.dueDate)}</p>
-                        </div>
-                        <div className={`text-xs font-medium px-2 py-1 rounded-lg ${
-                          isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
-                        </div>
-                      </div>
-                    </UITooltip>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* OKR Under Monitoring */}
-          <Card title="OKR sotto monitoraggio" action={
+          {/* OKR sotto monitoraggio - Row 2 */}
+          <Card title="OKR sotto monitoraggio" className="h-[280px]" action={
             <span className="text-xs text-orange-500 font-medium">
               {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
             </span>
           }>
             {needsAttention.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-sm">
-                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-400" />
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+                <CheckCircle2 className="w-8 h-8 mb-2 text-green-400" />
                 Tutti gli OKR sono in linea
               </div>
             ) : (
-              <div className="space-y-3">
-                {needsAttention.map((obj) => {
+              <div className="space-y-2">
+                {needsAttention.slice(0, 3).map((obj) => {
                   const metrics = obj.healthMetrics!;
                   const riskConfig = riskLevelConfig[metrics.riskLevel];
                   const RiskIcon = riskConfig.icon;
 
                   return (
-                    <UITooltip
-                      key={obj.id}
-                      position="left"
-                      content={
-                        <div className="space-y-2 min-w-[200px]">
-                          <p className="font-medium">{obj.title}</p>
-                          <div className="text-[10px] space-y-1 text-gray-300">
-                            <p>📊 Livello: {obj.level === 'company' ? 'Aziendale' : obj.level === 'department' ? 'Dipartimento' : obj.level === 'team' ? 'Team' : 'Individuale'}</p>
-                            <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
-                            <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
-                            <p>🎯 Key Results: {obj.keyResults.length}</p>
-                            <hr className="border-gray-600 my-1" />
-                            <p>⏱️ Tempo trascorso: {metrics.percentTimeElapsed}%</p>
-                            <p>📈 Gap progresso: {metrics.progressGap > 0 ? `+${metrics.progressGap}%` : `${metrics.progressGap}%`} rispetto all'atteso</p>
+                    <div key={obj.id} className="p-2 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
+                          <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
+                              {riskConfig.label}
+                            </span>
+                            <span className="text-xs text-gray-400">{obj.progress}%</span>
                           </div>
                         </div>
-                      }
-                    >
-                      <div className="p-3 bg-gray-50 rounded-xl cursor-help">
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
-                            <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
-                                {riskConfig.label}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                {metrics.daysRemaining !== null && metrics.daysRemaining >= 0
-                                  ? `${metrics.daysRemaining}g rimasti`
-                                  : 'Scaduto'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Progress comparison */}
-                        <div className="mt-3 space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-500">Progresso attuale</span>
-                            <span className="font-medium text-gray-700">{obj.progress}%</span>
-                          </div>
-                          <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
-
-                          <div className="flex justify-between text-xs mt-2">
-                            <span className="text-gray-500">Progresso atteso</span>
-                            <span className="font-medium text-gray-500">{metrics.expectedProgress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className="h-1.5 rounded-full bg-gray-400"
-                              style={{ width: `${metrics.expectedProgress}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Pace indicator */}
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-xs text-gray-500">Ritmo</span>
-                          <span className={`text-xs font-semibold ${getPaceColor(metrics.paceRatio)}`}>
-                            {Math.round(metrics.paceRatio * 100)}% - {getPaceLabel(metrics.paceRatio)}
-                          </span>
-                        </div>
-
-                        {/* Recommendation */}
-                        {metrics.recommendation && (
-                          <div className="mt-2 p-2 bg-white rounded-lg border border-gray-100">
-                            <div className="flex items-start gap-2">
-                              <Zap className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-gray-600">{metrics.recommendation}</p>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    </UITooltip>
+                    </div>
                   );
                 })}
               </div>
@@ -615,8 +526,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         </div>
 
         {/* Recently Updated */}
-        <div>
-          <Card title="Aggiornati di Recente" className="h-full">
+        <div className="flex flex-col">
+          <Card title="Aggiornati di Recente" className="flex-1">
             {recentlyUpdated.length === 0 ? (
               <div className="py-8 text-center text-gray-400 text-sm">
                 Nessun obiettivo

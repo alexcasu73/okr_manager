@@ -114,7 +114,6 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
         <div className="space-y-4">
           {filteredObjectives.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-              <div className="text-gray-400 mb-2">{ICONS.Target}</div>
               <p className="text-gray-500 font-medium">Nessun obiettivo trovato per questa vista.</p>
               <button
                 onClick={onCreateClick}

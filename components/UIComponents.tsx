@@ -11,7 +11,7 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white rounded-3xl p-6 shadow-sm ${className}`}
+      className={`bg-white rounded-3xl p-6 shadow-sm flex flex-col ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -23,7 +23,7 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, act
           {action && <div>{action}</div>}
         </div>
       )}
-      {children}
+      <div className="flex-1">{children}</div>
     </div>
   );
 };
@@ -215,7 +215,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {isVisible && content && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 ${positionClasses[position]} pointer-events-none`}
+          className={`absolute z-[9999] ${positionClasses[position]} pointer-events-none`}
           role="tooltip"
         >
           <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg max-w-xs">

@@ -39,23 +39,9 @@ const Header: React.FC<HeaderProps> = ({ onSelectOKR }) => {
   if (!user) return null;
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-      {/* Search */}
-      <div className="flex-1 max-w-xl w-full">
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            {ICONS.Search}
-          </span>
-          <input
-            type="text"
-            placeholder="Search objectives, key results..."
-            className="w-full bg-white border-none py-3.5 pl-12 pr-4 rounded-2xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100 shadow-sm"
-          />
-        </div>
-      </div>
-
+    <header className="flex items-center justify-end mb-8 gap-4">
       {/* Right Actions */}
-      <div className="flex items-center gap-4 ml-0 md:ml-4">
+      <div className="flex items-center gap-4">
         <button className="relative bg-white p-3 rounded-xl shadow-sm text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">
           {ICONS.Statistics}
         </button>

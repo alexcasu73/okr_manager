@@ -8,6 +8,7 @@ import TeamPage from './components/TeamPage';
 import SettingsPage from './components/SettingsPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import UserManagementPage from './components/UserManagementPage';
+import ProfilePage from './components/ProfilePage';
 import CreateOKRModal from './components/CreateOKRModal';
 import OKRDetailModal from './components/OKRDetailModal';
 import LoginPage from './components/LoginPage';
@@ -104,6 +105,8 @@ const AppContent: React.FC = () => {
         return <SettingsPage />;
       case 'admin':
         return <UserManagementPage />;
+      case 'profile':
+        return <ProfilePage />;
       default:
         return <Dashboard currentUser={currentUser} />;
     }
