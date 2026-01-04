@@ -1,261 +1,713 @@
-import React, { useMemo } from 'react';
-import { Card, ProgressBar } from './UIComponents';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, ProgressBar, Tooltip as UITooltip } from './UIComponents';
 import { ICONS, STATUS_COLORS } from '../constants';
-import { MOCK_OBJECTIVES, CHART_DATA } from '../mockData';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { User, Objective } from '../types';
+import { okrAPI, Objective, KeyResult, HealthMetrics } from '../api/client';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { User } from '../types';
+import {
+  Loader2, Target, TrendingUp, AlertTriangle, CheckCircle2,
+  Clock, Calendar, ArrowRight, Users, Building2, User as UserIcon,
+  Gauge, TrendingDown, Zap
+} from 'lucide-react';
 
 interface DashboardProps {
   currentUser: User;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
-  // Filter objectives based on role
-  const visibleObjectives = useMemo(() => {
-    if (currentUser.role === 'super-admin') {
-      return MOCK_OBJECTIVES;
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadObjectives();
+  }, []);
+
+  const loadObjectives = async () => {
+    setIsLoading(true);
+    try {
+      const data = await okrAPI.getObjectives();
+      setObjectives(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nel caricamento');
+    } finally {
+      setIsLoading(false);
     }
-    return MOCK_OBJECTIVES.filter(obj => obj.ownerId === currentUser.id);
-  }, [currentUser]);
+  };
 
-  const totalOKRs = visibleObjectives.length;
-  
-  // Guard against division by zero
-  const avgProgress = totalOKRs > 0 
-    ? Math.round(visibleObjectives.reduce((acc, curr) => acc + curr.progress, 0) / totalOKRs) 
-    : 0;
-    
-  const atRisk = visibleObjectives.filter(o => o.status === 'at-risk' || o.status === 'off-track').length;
-  const completed = visibleObjectives.filter(o => o.status === 'completed').length;
+  // Computed statistics
+  const stats = useMemo(() => {
+    const total = objectives.length;
+    const avgProgress = total > 0
+      ? Math.round(objectives.reduce((acc, obj) => acc + obj.progress, 0) / total)
+      : 0;
+    const atRisk = objectives.filter(o => o.status === 'at-risk' || o.status === 'off-track').length;
+    const completed = objectives.filter(o => o.status === 'completed').length;
+    const onTrack = objectives.filter(o => o.status === 'on-track').length;
+    const draft = objectives.filter(o => o.status === 'draft').length;
 
-  // Calculate status distribution dynamically
-  const statusCounts = visibleObjectives.reduce((acc, obj) => {
-    acc[obj.status] = (acc[obj.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+    return { total, avgProgress, atRisk, completed, onTrack, draft };
+  }, [objectives]);
 
-  const dynamicDistribution = [
-    { name: 'On Track', value: statusCounts['on-track'] || 0, color: '#10B981' },
-    { name: 'At Risk', value: statusCounts['at-risk'] || 0, color: '#F59E0B' },
-    { name: 'Off Track', value: statusCounts['off-track'] || 0, color: '#EF4444' },
-    { name: 'Completed', value: statusCounts['completed'] || 0, color: '#3B82F6' },
-  ].filter(item => item.value > 0);
+  // Status distribution for pie chart
+  const statusDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    objectives.forEach(obj => {
+      counts[obj.status] = (counts[obj.status] || 0) + 1;
+    });
+
+    return [
+      { name: 'In Linea', value: counts['on-track'] || 0, color: '#10B981' },
+      { name: 'A Rischio', value: counts['at-risk'] || 0, color: '#F59E0B' },
+      { name: 'Fuori Strada', value: counts['off-track'] || 0, color: '#EF4444' },
+      { name: 'Completati', value: counts['completed'] || 0, color: '#3B82F6' },
+      { name: 'Bozza', value: counts['draft'] || 0, color: '#9CA3AF' },
+    ].filter(item => item.value > 0);
+  }, [objectives]);
+
+  // Level distribution
+  const levelDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    objectives.forEach(obj => {
+      counts[obj.level] = (counts[obj.level] || 0) + 1;
+    });
+
+    return [
+      { name: 'Azienda', value: counts['company'] || 0, icon: Building2, color: 'bg-purple-100 text-purple-600' },
+      { name: 'Dipartimento', value: counts['department'] || 0, icon: Users, color: 'bg-blue-100 text-blue-600' },
+      { name: 'Team', value: counts['team'] || 0, icon: Users, color: 'bg-green-100 text-green-600' },
+      { name: 'Individuale', value: counts['individual'] || 0, icon: UserIcon, color: 'bg-orange-100 text-orange-600' },
+    ];
+  }, [objectives]);
+
+  // Upcoming deadlines (next 14 days)
+  const upcomingDeadlines = useMemo(() => {
+    const now = new Date();
+    const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    return objectives
+      .filter(obj => {
+        if (!obj.dueDate || obj.status === 'completed') return false;
+        const dueDate = new Date(obj.dueDate);
+        return dueDate >= now && dueDate <= twoWeeksFromNow;
+      })
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 5);
+  }, [objectives]);
+
+  // Critical Key Results (low progress or off-track)
+  const criticalKeyResults = useMemo(() => {
+    const allKRs: (KeyResult & { objectiveTitle: string })[] = [];
+
+    objectives.forEach(obj => {
+      if (obj.status === 'completed') return;
+
+      obj.keyResults.forEach(kr => {
+        const progress = kr.targetValue > kr.startValue
+          ? ((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100
+          : 0;
+
+        // KR is critical if progress < 30% or status is off-track/at-risk
+        if (progress < 30 || kr.status === 'off-track' || kr.status === 'at-risk') {
+          allKRs.push({
+            ...kr,
+            objectiveTitle: obj.title
+          });
+        }
+      });
+    });
+
+    return allKRs.slice(0, 5);
+  }, [objectives]);
+
+  // Recently updated objectives
+  const recentlyUpdated = useMemo(() => {
+    return [...objectives]
+      .sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0);
+        const dateB = new Date(b.updatedAt || b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 5);
+  }, [objectives]);
+
+  // OKRs that need monitoring (based on health metrics)
+  const needsAttention = useMemo(() => {
+    return objectives
+      .filter(obj => {
+        if (obj.status === 'completed') return false;
+        const metrics = obj.healthMetrics;
+        if (!metrics) return false;
+        return metrics.riskLevel === 'medium' ||
+               metrics.riskLevel === 'high' ||
+               metrics.riskLevel === 'critical';
+      })
+      .sort((a, b) => {
+        // Sort by risk level (critical > high > medium)
+        const riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+        const riskA = a.healthMetrics?.riskLevel || 'low';
+        const riskB = b.healthMetrics?.riskLevel || 'low';
+        return riskOrder[riskA] - riskOrder[riskB];
+      })
+      .slice(0, 5);
+  }, [objectives]);
+
+  // Pace statistics
+  const paceStats = useMemo(() => {
+    const withMetrics = objectives.filter(obj =>
+      obj.healthMetrics && obj.status !== 'completed' && obj.status !== 'draft'
+    );
+
+    if (withMetrics.length === 0) return { avgPaceRatio: 1, onPaceCount: 0, behindCount: 0 };
+
+    // Use ?? instead of || to correctly handle paceRatio = 0
+    const avgPaceRatio = withMetrics.reduce((sum, obj) =>
+      sum + (obj.healthMetrics?.paceRatio ?? 1), 0) / withMetrics.length;
+
+    const onPaceCount = withMetrics.filter(obj => obj.healthMetrics?.isOnPace).length;
+    const behindCount = withMetrics.length - onPaceCount;
+
+    return { avgPaceRatio: Math.round(avgPaceRatio * 100) / 100, onPaceCount, behindCount };
+  }, [objectives]);
+
+  // Helper functions
+  const getDaysUntilDue = (dueDate: string) => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'short'
+    });
+  };
+
+  const getKRProgress = (kr: KeyResult) => {
+    if (kr.targetValue === kr.startValue) return kr.currentValue >= kr.targetValue ? 100 : 0;
+    return Math.min(Math.max(((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100, 0), 100);
+  };
+
+  const getProgressColor = (progress: number) => {
+    if (progress >= 70) return 'bg-green-500';
+    if (progress >= 40) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const statusLabels: Record<string, string> = {
+    draft: 'Bozza',
+    'on-track': 'In linea',
+    'at-risk': 'A rischio',
+    'off-track': 'Fuori strada',
+    completed: 'Completato'
+  };
+
+  const riskLevelConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof AlertTriangle }> = {
+    low: { label: 'Basso', color: 'text-green-600', bgColor: 'bg-green-100', icon: CheckCircle2 },
+    medium: { label: 'Medio', color: 'text-yellow-600', bgColor: 'bg-yellow-100', icon: AlertTriangle },
+    high: { label: 'Alto', color: 'text-orange-600', bgColor: 'bg-orange-100', icon: AlertTriangle },
+    critical: { label: 'Critico', color: 'text-red-600', bgColor: 'bg-red-100', icon: TrendingDown }
+  };
+
+  const getPaceColor = (paceRatio: number) => {
+    if (paceRatio >= 1.0) return 'text-green-600';
+    if (paceRatio >= 0.8) return 'text-green-500';
+    if (paceRatio >= 0.6) return 'text-yellow-500';
+    if (paceRatio >= 0.4) return 'text-orange-500';
+    return 'text-red-500';
+  };
+
+  const getPaceLabel = (paceRatio: number) => {
+    if (paceRatio >= 1.1) return 'In anticipo';
+    if (paceRatio >= 0.9) return 'In linea';
+    if (paceRatio >= 0.7) return 'Leggero ritardo';
+    if (paceRatio >= 0.5) return 'In ritardo';
+    return 'Critico';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20 text-red-500">
+        {error}
+        <button onClick={loadObjectives} className="ml-2 underline">Riprova</button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">
-          {currentUser.role === 'super-admin' ? 'Company Overview' : 'My Progress Overview'}
-        </h2>
-        <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
-          Viewing {totalOKRs} Objectives
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {currentUser.role === 'admin' ? 'Panoramica aziendale' : `Benvenuto, ${currentUser.name}`}
+          </p>
+        </div>
+        <span className="text-sm text-gray-500 bg-white px-4 py-2 rounded-xl shadow-sm">
+          {stats.total} Obiettivi attivi
         </span>
       </div>
 
-      {/* Top Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="flex flex-col justify-between">
-          <div>
-            <p className="text-gray-500 text-sm font-medium mb-1">Total Objectives</p>
-            <h3 className="text-3xl font-bold text-gray-900">{totalOKRs}</h3>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-md text-xs font-semibold">
-              <span className="text-gray-400 font-normal">Active Cycle</span>
-            </span>
-            <div className="h-10 w-2 bg-blue-500 rounded-full opacity-80 h-16 mb-[-1.5rem]"></div>
-          </div>
-        </Card>
-
-        <Card className="flex flex-col justify-between">
-          <div>
-            <p className="text-gray-500 text-sm font-medium mb-1">Avg Progress</p>
-            <h3 className="text-3xl font-bold text-gray-900">{avgProgress}%</h3>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-             <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded-md text-xs font-semibold">
-              <span className="text-gray-400 font-normal">Target: 80%</span>
-            </span>
-            <div className="h-10 w-2 bg-green-500 rounded-full opacity-80 h-16 mb-[-1.5rem]"></div>
-          </div>
-        </Card>
-
-        <Card className="flex flex-col justify-between">
-          <div>
-            <p className="text-gray-500 text-sm font-medium mb-1">At Risk / Off Track</p>
-            <h3 className="text-3xl font-bold text-gray-900">{atRisk}</h3>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-             <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-md text-xs font-semibold">
-              <span className="text-gray-400 font-normal">Needs Attention</span>
-            </span>
-             <div className="h-10 w-2 bg-purple-500 rounded-full opacity-80 h-16 mb-[-1.5rem]"></div>
-          </div>
-        </Card>
-
-        <Card className="flex flex-col justify-between">
-          <div>
-            <p className="text-gray-500 text-sm font-medium mb-1">Completed OKRs</p>
-            <h3 className="text-3xl font-bold text-gray-900">{completed}</h3>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded-md text-xs font-semibold">
-              <span className="text-gray-400 font-normal">Q1 Goals</span>
-            </span>
-            <div className="h-10 w-2 bg-amber-400 rounded-full opacity-80 h-16 mb-[-1.5rem]"></div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Bar Chart */}
-        <div className="lg:col-span-2">
-          <Card title="Objective Progress" className="h-full">
-            <div className="flex items-center gap-4 mb-6 text-sm">
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-blue-100"></span>
-                    <span className="text-gray-500">Target</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                    <span className="text-gray-500">Achieved</span>
-                </div>
-                 <select className="ml-auto bg-gray-50 border-none text-xs rounded-lg px-2 py-1 text-gray-500 focus:outline-none">
-                  <option>Yearly</option>
-                  <option>Quarterly</option>
-                </select>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <UITooltip
+          content={
+            <div className="space-y-1">
+              <p className="font-medium">Obiettivi Totali</p>
+              <p>Numero totale di OKR in tutti gli stati.</p>
+              <p className="text-gray-300 text-[10px] mt-1">
+                In linea: {stats.onTrack} | A rischio: {stats.atRisk} | Completati: {stats.completed}
+              </p>
             </div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={CHART_DATA} barSize={45} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  />
-                  <Bar dataKey="target" stackId="a" fill="#EBF5FF" radius={[10, 10, 0, 0]} />
-                  <Bar dataKey="achieved" stackId="b" fill="#3B82F6" radius={[10, 10, 10, 10]}>
-                    {CHART_DATA.map((entry, index) => (
-                         <Cell key={`cell-${index}`} fill={index === 2 || index === 3 ? '#3B82F6' : '#3B82F6'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          }
+          position="bottom"
+        >
+          <Card className="relative overflow-hidden cursor-help w-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Obiettivi Totali</p>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</h3>
+                <p className="text-xs text-gray-400 mt-2">
+                  {stats.draft} in bozza
+                </p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-2xl">
+                <Target className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
           </Card>
-        </div>
+        </UITooltip>
 
-        {/* Donut Chart */}
-        <div className="lg:col-span-1">
-          <Card title="Status Distribution" className="h-full">
-             <div className="flex justify-end mb-4">
-               <select className="bg-gray-50 border-none text-xs rounded-lg px-2 py-1 text-gray-500 focus:outline-none">
-                  <option>This week</option>
-                </select>
-             </div>
-             {totalOKRs === 0 ? (
-               <div className="h-64 flex items-center justify-center text-gray-400">No data available</div>
-             ) : (
+        <UITooltip
+          content={
+            <div className="space-y-1">
+              <p className="font-medium">Progresso Medio</p>
+              <p>Media ponderata del progresso di tutti gli OKR attivi.</p>
+              <p className="text-gray-300 text-[10px] mt-1">
+                Basato su {stats.total - stats.draft} obiettivi attivi
+              </p>
+            </div>
+          }
+          position="bottom"
+        >
+          <Card className="relative overflow-hidden cursor-help w-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Progresso Medio</p>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.avgProgress}%</h3>
+                <div className="mt-2">
+                  <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
+                </div>
+              </div>
+              <div className="p-3 bg-green-100 rounded-2xl">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </Card>
+        </UITooltip>
+
+        <UITooltip
+          content={
+            <div className="space-y-1">
+              <p className="font-medium">Ritmo Medio</p>
+              <p>Rapporto tra progresso attuale e progresso atteso in base al tempo.</p>
+              <p className="text-gray-300 text-[10px] mt-1">
+                100% = perfettamente in linea | &lt;80% = in ritardo
+              </p>
+              {paceStats.avgPaceRatio < 0.8 && (
+                <p className="text-yellow-300 text-[10px]">
+                  ⚠️ Il team è in ritardo rispetto alla pianificazione
+                </p>
+              )}
+            </div>
+          }
+          position="bottom"
+        >
+          <Card className="relative overflow-hidden cursor-help w-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Ritmo Medio</p>
+                <h3 className={`text-3xl font-bold mt-1 ${getPaceColor(paceStats.avgPaceRatio)}`}>
+                  {Math.round(paceStats.avgPaceRatio * 100)}%
+                </h3>
+                <p className="text-xs text-gray-400 mt-2">
+                  {paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo
+                </p>
+              </div>
+              <div className="p-3 bg-indigo-100 rounded-2xl">
+                <Gauge className="w-6 h-6 text-indigo-600" />
+              </div>
+            </div>
+          </Card>
+        </UITooltip>
+
+        <UITooltip
+          content={
+            <div className="space-y-1">
+              <p className="font-medium">Completati</p>
+              <p>OKR che hanno raggiunto il 100% di progresso.</p>
+              <p className="text-gray-300 text-[10px] mt-1">
+                Tasso di completamento: {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+              </p>
+            </div>
+          }
+          position="bottom"
+        >
+          <Card className="relative overflow-hidden cursor-help w-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Completati</p>
+                <h3 className="text-3xl font-bold text-gray-900 mt-1">{stats.completed}</h3>
+                <p className="text-xs text-gray-400 mt-2">
+                  {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-2xl">
+                <CheckCircle2 className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </Card>
+        </UITooltip>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Status Distribution + Level Distribution */}
+        <div className="space-y-6">
+          {/* Status Pie Chart */}
+          <Card title="Distribuzione per Stato">
+            {stats.total === 0 ? (
+              <div className="h-48 flex items-center justify-center text-gray-400">
+                Nessun obiettivo
+              </div>
+            ) : (
               <>
-                <div className="h-64 w-full relative">
+                <div className="h-48 relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={dynamicDistribution}
-                        innerRadius={60}
-                        outerRadius={85}
-                        paddingAngle={0}
+                        data={statusDistribution}
+                        innerRadius={50}
+                        outerRadius={70}
+                        paddingAngle={2}
                         dataKey="value"
                         stroke="none"
                       >
-                        {dynamicDistribution.map((entry, index) => (
+                        {statusDistribution.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <RechartsTooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                      <p className="text-gray-400 text-xs">Total</p>
-                      <p className="text-2xl font-bold text-gray-900">{totalOKRs}</p>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                    <p className="text-xs text-gray-400">Totale</p>
                   </div>
                 </div>
-                <div className="mt-4 space-y-2">
-                    {dynamicDistribution.map((status) => (
-                        <div key={status.name} className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{backgroundColor: status.color}}></span>
-                                <span className="text-gray-500">{status.name}</span>
-                            </div>
-                            <span className="font-medium">{Math.round((status.value / totalOKRs) * 100)}%</span>
-                        </div>
-                    ))}
+                <div className="space-y-2 mt-4">
+                  {statusDistribution.map((status) => (
+                    <div key={status.name} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+                        <span className="text-gray-600">{status.name}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900">{status.value}</span>
+                    </div>
+                  ))}
                 </div>
               </>
-             )}
+            )}
+          </Card>
+
+          {/* Level Distribution */}
+          <Card title="Obiettivi per Livello">
+            <div className="space-y-3">
+              {levelDistribution.map((level) => (
+                <div key={level.name} className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${level.color}`}>
+                    <level.icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">{level.name}</span>
+                      <span className="font-semibold text-gray-900">{level.value}</span>
+                    </div>
+                    <div className="mt-1">
+                      <ProgressBar
+                        value={stats.total > 0 ? (level.value / stats.total) * 100 : 0}
+                        height="h-1"
+                        color="bg-gray-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Upcoming Deadlines + Critical KRs */}
+        <div className="space-y-6">
+          {/* Upcoming Deadlines */}
+          <Card title="Scadenze Imminenti" action={
+            <span className="text-xs text-gray-400">Prossimi 14 giorni</span>
+          }>
+            {upcomingDeadlines.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-sm">
+                Nessuna scadenza imminente
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingDeadlines.map((obj) => {
+                  const daysLeft = getDaysUntilDue(obj.dueDate);
+                  const isUrgent = daysLeft <= 3;
+
+                  return (
+                    <UITooltip
+                      key={obj.id}
+                      position="left"
+                      content={
+                        <div className="space-y-1 min-w-[180px]">
+                          <p className="font-medium">{obj.title}</p>
+                          <div className="text-[10px] text-gray-300 space-y-1">
+                            <p>📅 Scadenza: {new Date(obj.dueDate).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                            <p>📊 Progresso: {obj.progress}%</p>
+                            <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
+                            {isUrgent && <p className="text-yellow-300">⚠️ Scadenza urgente!</p>}
+                          </div>
+                        </div>
+                      }
+                    >
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-help">
+                        <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100' : 'bg-blue-100'}`}>
+                          <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600' : 'text-blue-600'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
+                          <p className="text-xs text-gray-400">{formatDate(obj.dueDate)}</p>
+                        </div>
+                        <div className={`text-xs font-medium px-2 py-1 rounded-lg ${
+                          isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
+                        </div>
+                      </div>
+                    </UITooltip>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* OKR Under Monitoring */}
+          <Card title="OKR sotto monitoraggio" action={
+            <span className="text-xs text-orange-500 font-medium">
+              {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
+            </span>
+          }>
+            {needsAttention.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-sm">
+                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                Tutti gli OKR sono in linea
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {needsAttention.map((obj) => {
+                  const metrics = obj.healthMetrics!;
+                  const riskConfig = riskLevelConfig[metrics.riskLevel];
+                  const RiskIcon = riskConfig.icon;
+
+                  return (
+                    <UITooltip
+                      key={obj.id}
+                      position="left"
+                      content={
+                        <div className="space-y-2 min-w-[200px]">
+                          <p className="font-medium">{obj.title}</p>
+                          <div className="text-[10px] space-y-1 text-gray-300">
+                            <p>📊 Livello: {obj.level === 'company' ? 'Aziendale' : obj.level === 'department' ? 'Dipartimento' : obj.level === 'team' ? 'Team' : 'Individuale'}</p>
+                            <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
+                            <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
+                            <p>🎯 Key Results: {obj.keyResults.length}</p>
+                            <hr className="border-gray-600 my-1" />
+                            <p>⏱️ Tempo trascorso: {metrics.percentTimeElapsed}%</p>
+                            <p>📈 Gap progresso: {metrics.progressGap > 0 ? `+${metrics.progressGap}%` : `${metrics.progressGap}%`} rispetto all'atteso</p>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <div className="p-3 bg-gray-50 rounded-xl cursor-help">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
+                            <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
+                                {riskConfig.label}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {metrics.daysRemaining !== null && metrics.daysRemaining >= 0
+                                  ? `${metrics.daysRemaining}g rimasti`
+                                  : 'Scaduto'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress comparison */}
+                        <div className="mt-3 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">Progresso attuale</span>
+                            <span className="font-medium text-gray-700">{obj.progress}%</span>
+                          </div>
+                          <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
+
+                          <div className="flex justify-between text-xs mt-2">
+                            <span className="text-gray-500">Progresso atteso</span>
+                            <span className="font-medium text-gray-500">{metrics.expectedProgress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="h-1.5 rounded-full bg-gray-400"
+                              style={{ width: `${metrics.expectedProgress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Pace indicator */}
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-xs text-gray-500">Ritmo</span>
+                          <span className={`text-xs font-semibold ${getPaceColor(metrics.paceRatio)}`}>
+                            {Math.round(metrics.paceRatio * 100)}% - {getPaceLabel(metrics.paceRatio)}
+                          </span>
+                        </div>
+
+                        {/* Recommendation */}
+                        {metrics.recommendation && (
+                          <div className="mt-2 p-2 bg-white rounded-lg border border-gray-100">
+                            <div className="flex items-start gap-2">
+                              <Zap className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-gray-600">{metrics.recommendation}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </UITooltip>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Recently Updated */}
+        <div>
+          <Card title="Aggiornati di Recente" className="h-full">
+            {recentlyUpdated.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-sm">
+                Nessun obiettivo
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentlyUpdated.map((obj) => (
+                  <UITooltip
+                    key={obj.id}
+                    position="left"
+                    content={
+                      <div className="space-y-1 min-w-[200px]">
+                        <p className="font-medium">{obj.title}</p>
+                        <div className="text-[10px] text-gray-300 space-y-1">
+                          <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
+                          <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
+                          <p>🎯 Key Results: {obj.keyResults.length}</p>
+                          {obj.keyResults.length > 0 && (
+                            <>
+                              <hr className="border-gray-600 my-1" />
+                              {obj.keyResults.slice(0, 3).map((kr, idx) => (
+                                <p key={kr.id} className="truncate">
+                                  {idx + 1}. {kr.description} ({Math.round(((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100)}%)
+                                </p>
+                              ))}
+                              {obj.keyResults.length > 3 && (
+                                <p className="text-gray-400">...e altri {obj.keyResults.length - 3}</p>
+                              )}
+                            </>
+                          )}
+                          <hr className="border-gray-600 my-1" />
+                          <p>🕐 Aggiornato: {obj.updatedAt ? new Date(obj.updatedAt).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="group cursor-help">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-xl ${
+                          obj.status === 'completed' ? 'bg-green-100' :
+                          obj.status === 'at-risk' ? 'bg-orange-100' :
+                          obj.status === 'off-track' ? 'bg-red-100' :
+                          'bg-blue-100'
+                        }`}>
+                          <Target className={`w-4 h-4 ${
+                            obj.status === 'completed' ? 'text-green-600' :
+                            obj.status === 'at-risk' ? 'text-orange-600' :
+                            obj.status === 'off-track' ? 'text-red-600' :
+                            'text-blue-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{obj.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
+                              {statusLabels[obj.status] || obj.status}
+                            </span>
+                            <span className="text-xs text-gray-400">{obj.period}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-gray-900">{obj.progress}%</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 ml-11">
+                        <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
+                      </div>
+                      {obj.keyResults.length > 0 && (
+                        <div className="mt-2 ml-11 text-xs text-gray-400">
+                          {obj.keyResults.length} Key Results
+                        </div>
+                      )}
+                    </div>
+                  </UITooltip>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
 
-      {/* Bottom Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Recent Updates" className="h-full">
-             <div className="space-y-6">
-                 {[1,2,3].map((_, i) => (
-                     <div key={i} className="flex items-center gap-4">
-                         <div className={`p-3 rounded-2xl ${i===0 ? 'bg-blue-100 text-blue-500' : i===1 ? 'bg-amber-100 text-amber-500' : 'bg-green-100 text-green-500'}`}>
-                             {i===0 ? ICONS.Target : i===1 ? ICONS.TrendingUp : ICONS.Check}
-                         </div>
-                         <div className="flex-1">
-                             <h4 className="text-sm font-bold text-gray-900">
-                                 {i===0 ? "Q1 Sales Target Updated" : i===1 ? "User Growth Metric" : "Beta Launch Complete"}
-                             </h4>
-                             <p className="text-xs text-gray-400 mt-0.5">15 minutes ago</p>
-                         </div>
-                         <div className="text-right">
-                             <p className="text-sm font-bold text-gray-900">${240 + i*150}</p>
-                         </div>
-                     </div>
-                 ))}
-             </div>
+      {/* Empty State */}
+      {stats.total === 0 && (
+        <Card className="text-center py-12">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Target className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Nessun obiettivo ancora</h3>
+          <p className="text-gray-500 mb-4">Inizia creando il tuo primo OKR per tracciare i progressi</p>
         </Card>
-
-        <Card title="Team Performance" className="h-full">
-             <div className="space-y-6">
-                  {['Sales Team', 'Product Team', 'Engineering'].map((team, i) => (
-                     <div key={i} className="flex items-center gap-4">
-                         <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-lg">
-                            {i === 0 ? '🚀' : i === 1 ? '🎨' : '💻'}
-                         </div>
-                         <div className="flex-1">
-                             <h4 className="text-sm font-bold text-gray-900">{team}</h4>
-                             <p className="text-xs text-gray-400 mt-0.5">{8 - i} active objectives</p>
-                         </div>
-                         <div className="w-24">
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="text-gray-500">Progress</span>
-                                <span className="font-bold">{90 - i*15}%</span>
-                            </div>
-                            <ProgressBar value={90 - i*15} height="h-1.5" color={i===0 ? 'bg-green-500' : i===1 ? 'bg-blue-500' : 'bg-amber-400'} />
-                         </div>
-                     </div>
-                  ))}
-             </div>
-        </Card>
-      </div>
+      )}
     </div>
   );
 };

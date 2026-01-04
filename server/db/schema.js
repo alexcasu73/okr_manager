@@ -58,6 +58,46 @@ export async function initializeOKRSchema(pool) {
       )
     `);
 
+    // Teams table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+
+    // Team members table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS team_members (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role VARCHAR(50) NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+        joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(team_id, user_id)
+      )
+    `);
+
+    // Team invitations table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS team_invitations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        email VARCHAR(255) NOT NULL,
+        invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role VARCHAR(50) NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+        status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+        token VARCHAR(255) NOT NULL UNIQUE,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        accepted_at TIMESTAMP WITH TIME ZONE
+      )
+    `);
+
     // Indexes
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_objectives_owner ON objectives(owner_id);
@@ -65,6 +105,10 @@ export async function initializeOKRSchema(pool) {
       CREATE INDEX IF NOT EXISTS idx_objectives_period ON objectives(period);
       CREATE INDEX IF NOT EXISTS idx_objectives_status ON objectives(status);
       CREATE INDEX IF NOT EXISTS idx_key_results_objective ON key_results(objective_id);
+      CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+      CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+      CREATE INDEX IF NOT EXISTS idx_team_invitations_email ON team_invitations(email);
+      CREATE INDEX IF NOT EXISTS idx_team_invitations_token ON team_invitations(token);
     `);
 
     await client.query('COMMIT');

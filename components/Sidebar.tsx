@@ -1,6 +1,7 @@
 import React from 'react';
 import { ICONS } from '../constants';
 import { ViewMode } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface NavItemProps {
   item: {
@@ -34,11 +35,21 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    logout();
+    window.location.replace('/');
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
     { id: 'okrs', label: 'Objectives', icon: ICONS.Target },
     { id: 'team', label: 'My Team', icon: ICONS.Team },
     { id: 'reports', label: 'Analytics', icon: ICONS.Analytics },
+    // Admin menu - only visible to admins
+    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
   ];
 
   const bottomItems = [
@@ -102,7 +113,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
         <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-200 rounded-full opacity-50 blur-xl"></div>
       </div>
 
-      <button className="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-2 text-sm font-medium">
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-2 text-sm font-medium"
+      >
         {ICONS.Logout}
         <span>Logout</span>
       </button>

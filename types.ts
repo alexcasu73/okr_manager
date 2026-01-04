@@ -3,7 +3,7 @@ import React from 'react';
 export type Status = 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft';
 export type Confidence = 'high' | 'medium' | 'low';
 export type MetricType = 'percentage' | 'number' | 'currency' | 'boolean';
-export type ViewMode = 'dashboard' | 'okrs' | 'team' | 'reports' | 'settings';
+export type ViewMode = 'dashboard' | 'okrs' | 'team' | 'reports' | 'settings' | 'admin';
 
 export interface User {
   id: string;

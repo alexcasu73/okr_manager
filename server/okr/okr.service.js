@@ -4,7 +4,7 @@
 
 // Transform DB row to API format
 function transformObjective(row, keyResults = []) {
-  return {
+  const objective = {
     id: row.id,
     title: row.title,
     description: row.description,
@@ -19,6 +19,89 @@ function transformObjective(row, keyResults = []) {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+
+  // Add health metrics for dashboard insights
+  objective.healthMetrics = calculateHealthMetricsFromRow(row, keyResults);
+
+  return objective;
+}
+
+// Calculate health metrics from raw row data
+function calculateHealthMetricsFromRow(row, keyResults) {
+  const now = new Date();
+  const due = row.due_date ? new Date(row.due_date) : null;
+  const created = new Date(row.created_at);
+  const progress = row.progress || 0;
+
+  const metrics = {
+    paceRatio: 1.0,
+    expectedProgress: 0,
+    progressGap: 0,
+    daysRemaining: null,
+    daysElapsed: 0,
+    totalDays: 0,
+    percentTimeElapsed: 0,
+    isOnPace: true,
+    riskLevel: 'low',
+    recommendation: null
+  };
+
+  if (!due) return metrics;
+
+  metrics.daysRemaining = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+
+  // If deadline has passed and not completed, it's critical
+  if (metrics.daysRemaining < 0 && progress < 100) {
+    metrics.riskLevel = 'critical';
+    metrics.isOnPace = false;
+    metrics.paceRatio = 0;
+    metrics.expectedProgress = 100;
+    metrics.progressGap = 100 - progress;
+    metrics.percentTimeElapsed = 100;
+    metrics.recommendation = 'Scaduto! Obiettivo non raggiunto. Azione urgente richiesta.';
+    return metrics;
+  }
+
+  const totalDuration = due - created;
+  const elapsed = now - created;
+
+  // Handle edge case where due date is before or same as created date
+  if (totalDuration <= 0) {
+    metrics.riskLevel = progress >= 100 ? 'low' : 'critical';
+    metrics.isOnPace = progress >= 100;
+    metrics.expectedProgress = 100;
+    metrics.progressGap = 100 - progress;
+    metrics.recommendation = progress < 100 ? 'Obiettivo con scadenza immediata non raggiunto.' : null;
+    return metrics;
+  }
+
+  metrics.daysElapsed = Math.max(0, Math.floor(elapsed / (1000 * 60 * 60 * 24)));
+  metrics.totalDays = Math.ceil(totalDuration / (1000 * 60 * 60 * 24));
+  metrics.percentTimeElapsed = Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+
+  const timeProgress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+  metrics.expectedProgress = Math.round(timeProgress);
+  metrics.progressGap = Math.round(metrics.expectedProgress - progress);
+  metrics.paceRatio = metrics.expectedProgress > 0
+    ? Math.round((progress / metrics.expectedProgress) * 100) / 100
+    : 1;
+  metrics.isOnPace = metrics.paceRatio >= 0.8;
+
+  // Determine risk level
+  if (metrics.paceRatio >= 0.9) {
+    metrics.riskLevel = 'low';
+  } else if (metrics.paceRatio >= 0.7) {
+    metrics.riskLevel = 'medium';
+    metrics.recommendation = 'Leggermente in ritardo. Considera di accelerare.';
+  } else if (metrics.paceRatio >= 0.5) {
+    metrics.riskLevel = 'high';
+    metrics.recommendation = 'In ritardo significativo. Richiede intervento.';
+  } else {
+    metrics.riskLevel = 'critical';
+    metrics.recommendation = 'Critico. Rivaluta obiettivi o risorse.';
+  }
+
+  return metrics;
 }
 
 function transformKeyResult(row) {
@@ -52,20 +135,142 @@ function calculateProgress(keyResults) {
   return Math.round(totalProgress / keyResults.length);
 }
 
-// Determine status based on progress and due date
-function determineStatus(progress, dueDate) {
+/**
+ * Determine status based on progress, time elapsed, and pace analysis
+ *
+ * Logic:
+ * 1. Calculate expected progress based on time elapsed
+ * 2. Compare actual progress to expected (pace ratio)
+ * 3. Consider urgency (how close to deadline)
+ * 4. Factor in confidence levels from Key Results
+ *
+ * Status meanings:
+ * - completed: progress >= 100%
+ * - on-track: pace ratio >= 0.8 (within 20% of expected)
+ * - at-risk: pace ratio 0.5-0.8 OR close to deadline with moderate gap
+ * - off-track: pace ratio < 0.5 OR past deadline OR severe gap near deadline
+ */
+function determineStatus(progress, dueDate, createdAt = null, keyResults = []) {
+  // Completed check
   if (progress >= 100) return 'completed';
 
   const now = new Date();
   const due = new Date(dueDate);
   const daysUntilDue = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
 
+  // Past deadline = off-track
   if (daysUntilDue < 0) return 'off-track';
-  if (progress < 25 && daysUntilDue < 30) return 'off-track';
-  if (progress < 50 && daysUntilDue < 30) return 'at-risk';
-  if (progress < 70 && daysUntilDue < 14) return 'at-risk';
 
+  // If no due date or just created, default to on-track
+  if (!dueDate) return progress > 0 ? 'on-track' : 'draft';
+
+  // Calculate time-based expected progress
+  const created = createdAt ? new Date(createdAt) : new Date(due.getTime() - 90 * 24 * 60 * 60 * 1000); // default 90 days
+  const totalDuration = due - created;
+  const elapsed = now - created;
+  const timeProgress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+
+  // Expected progress (linear model - could be adjusted for different curves)
+  const expectedProgress = timeProgress;
+
+  // Pace ratio: actual / expected (1.0 = on track, > 1.0 = ahead, < 1.0 = behind)
+  const paceRatio = expectedProgress > 0 ? progress / expectedProgress : (progress > 0 ? 1.5 : 0.5);
+
+  // Gap: how many percentage points behind
+  const progressGap = expectedProgress - progress;
+
+  // Confidence factor from Key Results (average confidence)
+  let confidenceFactor = 1.0;
+  if (keyResults && keyResults.length > 0) {
+    const confidenceScores = { high: 1.0, medium: 0.8, low: 0.6 };
+    const avgConfidence = keyResults.reduce((sum, kr) => {
+      return sum + (confidenceScores[kr.confidence] || 0.8);
+    }, 0) / keyResults.length;
+    confidenceFactor = avgConfidence;
+  }
+
+  // Urgency multiplier: increases as deadline approaches
+  // More strict when close to deadline
+  let urgencyMultiplier = 1.0;
+  if (daysUntilDue <= 7) {
+    urgencyMultiplier = 1.5; // Very close - be stricter
+  } else if (daysUntilDue <= 14) {
+    urgencyMultiplier = 1.3;
+  } else if (daysUntilDue <= 30) {
+    urgencyMultiplier = 1.1;
+  }
+
+  // Adjusted pace ratio considering confidence
+  const adjustedPaceRatio = paceRatio * confidenceFactor;
+
+  // Decision logic
+  // OFF-TRACK conditions:
+  if (adjustedPaceRatio < 0.4) return 'off-track'; // Severely behind pace
+  if (daysUntilDue <= 7 && progress < 70) return 'off-track'; // 1 week left, not near completion
+  if (daysUntilDue <= 14 && progress < 50) return 'off-track'; // 2 weeks left, less than half done
+  if (progressGap > 40 * urgencyMultiplier) return 'off-track'; // Huge gap amplified by urgency
+
+  // AT-RISK conditions:
+  if (adjustedPaceRatio < 0.7) return 'at-risk'; // Behind pace
+  if (daysUntilDue <= 7 && progress < 85) return 'at-risk'; // 1 week left, should be almost done
+  if (daysUntilDue <= 14 && progress < 70) return 'at-risk'; // 2 weeks left, should be mostly done
+  if (daysUntilDue <= 30 && progress < 50) return 'at-risk'; // 1 month left, should be halfway
+  if (progressGap > 20 * urgencyMultiplier) return 'at-risk'; // Moderate gap
+
+  // ON-TRACK: pace ratio >= 0.7 and no urgent concerns
   return 'on-track';
+}
+
+/**
+ * Calculate detailed health metrics for an objective
+ * Returns additional data for dashboard insights
+ */
+function calculateHealthMetrics(objective, keyResults) {
+  const now = new Date();
+  const due = objective.due_date ? new Date(objective.due_date) : null;
+  const created = new Date(objective.created_at);
+
+  const metrics = {
+    paceRatio: 1.0,
+    expectedProgress: 0,
+    progressGap: 0,
+    daysRemaining: null,
+    daysElapsed: 0,
+    isOnPace: true,
+    riskLevel: 'low', // low, medium, high, critical
+    recommendation: null
+  };
+
+  if (!due) return metrics;
+
+  const totalDuration = due - created;
+  const elapsed = now - created;
+  metrics.daysElapsed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+  metrics.daysRemaining = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+
+  const timeProgress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+  metrics.expectedProgress = Math.round(timeProgress);
+
+  const progress = objective.progress || 0;
+  metrics.progressGap = Math.round(metrics.expectedProgress - progress);
+  metrics.paceRatio = metrics.expectedProgress > 0 ? progress / metrics.expectedProgress : 1;
+  metrics.isOnPace = metrics.paceRatio >= 0.8;
+
+  // Determine risk level
+  if (metrics.paceRatio >= 0.9) {
+    metrics.riskLevel = 'low';
+  } else if (metrics.paceRatio >= 0.7) {
+    metrics.riskLevel = 'medium';
+    metrics.recommendation = 'Leggermente in ritardo. Considera di accelerare il ritmo.';
+  } else if (metrics.paceRatio >= 0.5) {
+    metrics.riskLevel = 'high';
+    metrics.recommendation = 'Significativamente in ritardo. Richiede intervento immediato.';
+  } else {
+    metrics.riskLevel = 'critical';
+    metrics.recommendation = 'Criticamente in ritardo. Rivaluta obiettivi o risorse.';
+  }
+
+  return metrics;
 }
 
 // === OBJECTIVES ===
@@ -136,7 +341,10 @@ export async function getObjectiveById(pool, id) {
 }
 
 export async function createObjective(pool, data, userId) {
-  const { title, description, level, period, dueDate, keyResults = [] } = data;
+  const { title, description, level, period, dueDate, keyResults = [], ownerId } = data;
+
+  // Use provided ownerId or default to creating user
+  const objectiveOwnerId = ownerId || userId;
 
   const client = await pool.connect();
   try {
@@ -147,7 +355,7 @@ export async function createObjective(pool, data, userId) {
       `INSERT INTO objectives (title, description, owner_id, level, period, due_date, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'draft')
        RETURNING *`,
-      [title, description, userId, level, period, dueDate]
+      [title, description, objectiveOwnerId, level, period, dueDate]
     );
 
     const objective = rows[0];
@@ -178,6 +386,7 @@ export async function createObjective(pool, data, userId) {
 export async function updateObjective(pool, id, data, userId) {
   const { title, description, level, period, dueDate, status } = data;
 
+  // First update the basic fields
   const { rows } = await pool.query(
     `UPDATE objectives
      SET title = COALESCE($1, title),
@@ -185,14 +394,24 @@ export async function updateObjective(pool, id, data, userId) {
          level = COALESCE($3, level),
          period = COALESCE($4, period),
          due_date = COALESCE($5, due_date),
-         status = COALESCE($6, status),
          updated_at = NOW()
-     WHERE id = $7
+     WHERE id = $6
      RETURNING *`,
-    [title, description, level, period, dueDate, status, id]
+    [title, description, level, period, dueDate, id]
   );
 
   if (rows.length === 0) return null;
+
+  // If status was explicitly provided, use it; otherwise recalculate
+  if (status) {
+    await pool.query(
+      'UPDATE objectives SET status = $1 WHERE id = $2',
+      [status, id]
+    );
+  } else {
+    // Recalculate status based on current data
+    await updateObjectiveProgress(pool, id);
+  }
 
   return getObjectiveById(pool, id);
 }
@@ -289,13 +508,14 @@ async function updateObjectiveProgress(pool, objectiveId) {
   const progress = calculateProgress(keyResults);
 
   const { rows: objective } = await pool.query(
-    'SELECT due_date FROM objectives WHERE id = $1',
+    'SELECT due_date, created_at FROM objectives WHERE id = $1',
     [objectiveId]
   );
 
+  // Use enhanced status determination with all available data
   const status = objective[0]?.due_date
-    ? determineStatus(progress, objective[0].due_date)
-    : progress >= 100 ? 'completed' : 'on-track';
+    ? determineStatus(progress, objective[0].due_date, objective[0].created_at, keyResults)
+    : progress >= 100 ? 'completed' : (progress > 0 ? 'on-track' : 'draft');
 
   await pool.query(
     `UPDATE objectives SET progress = $1, status = $2, updated_at = NOW() WHERE id = $3`,
@@ -340,4 +560,79 @@ export async function getProgressHistory(pool, objectiveId) {
   `, [objectiveId]);
 
   return rows;
+}
+
+// === ADMIN FUNCTIONS ===
+
+/**
+ * Get count of all data associated with a user
+ * Used to warn admin before deleting a user
+ */
+export async function getUserDataCount(pool, userId) {
+  const { rows: [counts] } = await pool.query(`
+    SELECT
+      (SELECT COUNT(*) FROM objectives WHERE owner_id = $1) as objectives_count,
+      (SELECT COUNT(*) FROM key_results WHERE objective_id IN (SELECT id FROM objectives WHERE owner_id = $1)) as key_results_count,
+      (SELECT COUNT(*) FROM teams WHERE owner_id = $1) as teams_owned_count,
+      (SELECT COUNT(*) FROM team_members WHERE user_id = $1) as team_memberships_count
+  `, [userId]);
+
+  return {
+    objectivesCount: parseInt(counts.objectives_count) || 0,
+    keyResultsCount: parseInt(counts.key_results_count) || 0,
+    teamsOwnedCount: parseInt(counts.teams_owned_count) || 0,
+    teamMembershipsCount: parseInt(counts.team_memberships_count) || 0,
+    hasData: (parseInt(counts.objectives_count) || 0) > 0 ||
+             (parseInt(counts.teams_owned_count) || 0) > 0
+  };
+}
+
+/**
+ * Reassign all OKRs from one user to another
+ * Used before deleting a user to preserve OKR data
+ */
+export async function reassignUserOKRs(pool, fromUserId, toUserId) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Count objectives to reassign
+    const { rows: [countResult] } = await client.query(
+      'SELECT COUNT(*) as count FROM objectives WHERE owner_id = $1',
+      [fromUserId]
+    );
+    const objectivesCount = parseInt(countResult.count) || 0;
+
+    // Reassign objectives
+    await client.query(
+      'UPDATE objectives SET owner_id = $1, updated_at = NOW() WHERE owner_id = $2',
+      [toUserId, fromUserId]
+    );
+
+    // Reassign teams ownership
+    const { rows: [teamsCountResult] } = await client.query(
+      'SELECT COUNT(*) as count FROM teams WHERE owner_id = $1',
+      [fromUserId]
+    );
+    const teamsCount = parseInt(teamsCountResult.count) || 0;
+
+    await client.query(
+      'UPDATE teams SET owner_id = $1, updated_at = NOW() WHERE owner_id = $2',
+      [toUserId, fromUserId]
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      success: true,
+      reassignedObjectives: objectivesCount,
+      reassignedTeams: teamsCount
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }

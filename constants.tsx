@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Target, 
-  Users, 
-  PieChart, 
-  Settings, 
-  LogOut, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Target,
+  Users,
+  PieChart,
+  Settings,
+  LogOut,
+  Bell,
   Search,
   Plus,
   MoreHorizontal,
@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  FileText
+  FileText,
+  Shield
 } from 'lucide-react';
 
 export const ICONS = {
@@ -34,6 +35,7 @@ export const ICONS = {
   Warning: <AlertTriangle size={16} />,
   Check: <CheckCircle2 size={16} />,
   Error: <XCircle size={16} />,
+  Admin: <Shield size={20} />,
 };
 
 export const STATUS_COLORS = {

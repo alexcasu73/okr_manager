@@ -20,12 +20,15 @@ import {
   createBillingRoutes,
   createAuthLimiter,
   createGeneralLimiter,
-  errorHandler
+  errorHandler,
+  hashPassword,
+  generateJWT
 } from '../backend/src/index.js';
 
 // OKR modules
 import { initializeOKRSchema } from './db/schema.js';
 import { createOKRRoutes } from './okr/okr.routes.js';
+import { createTeamRoutes } from './team/team.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -118,6 +121,16 @@ app.use('/api/okr', createOKRRoutes({
     }
     next();
   }
+}));
+
+// Team routes
+app.use('/api/teams', createTeamRoutes({
+  pool,
+  authMiddleware,
+  emailService,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  hashPassword,
+  generateJWT: (userId) => generateJWT(userId, process.env.JWT_SECRET || 'dev-secret-change-in-production', '7d')
 }));
 
 // === ERROR HANDLING ===

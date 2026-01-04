@@ -12,7 +12,9 @@ import {
   updateKeyResult,
   deleteKeyResult,
   getStats,
-  getProgressHistory
+  getProgressHistory,
+  getUserDataCount,
+  reassignUserOKRs
 } from './okr.service.js';
 
 export function createOKRRoutes(config) {
@@ -170,6 +172,33 @@ export function createOKRRoutes(config) {
     try {
       const history = await getProgressHistory(pool, req.params.id);
       res.json(history);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // === ADMIN ENDPOINTS ===
+
+  // Get user's data count (for deletion warning)
+  router.get('/admin/users/:userId/data-count', requireAdmin, async (req, res, next) => {
+    try {
+      const counts = await getUserDataCount(pool, req.params.userId);
+      res.json(counts);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reassign all OKRs from one user to another
+  router.post('/admin/users/:userId/reassign-okrs', requireAdmin, async (req, res, next) => {
+    try {
+      const { targetUserId } = req.body;
+      if (!targetUserId) {
+        return res.status(400).json({ error: 'targetUserId is required' });
+      }
+
+      const result = await reassignUserOKRs(pool, req.params.userId, targetUserId);
+      res.json(result);
     } catch (error) {
       next(error);
     }

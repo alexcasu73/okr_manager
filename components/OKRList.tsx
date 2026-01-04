@@ -1,55 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Badge, ProgressBar } from './UIComponents';
-import { Objective, User } from '../types';
+import { User } from '../types';
 import { ICONS, STATUS_COLORS, PROGRESS_COLORS } from '../constants';
-import { MOCK_OBJECTIVES } from '../mockData';
+import { okrAPI, Objective } from '../api/client';
+import { Loader2, RefreshCw } from 'lucide-react';
 
 interface OKRListProps {
   onCreateClick: () => void;
+  onSelectOKR: (id: string) => void;
   currentUser: User;
+  refreshTrigger?: number; // Increment to trigger refresh
 }
 
-const OKRList: React.FC<OKRListProps> = ({ onCreateClick, currentUser }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'company' | 'team'>('all');
+const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUser, refreshTrigger }) => {
+  const [activeTab, setActiveTab] = useState<'all' | 'company' | 'team' | 'individual'>('all');
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredObjectives = MOCK_OBJECTIVES.filter(obj => {
-    // First, filter by permissions
-    if (currentUser.role !== 'super-admin' && obj.ownerId !== currentUser.id) {
+  const fetchObjectives = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const filters = activeTab !== 'all' ? { level: activeTab } : {};
+      const data = await okrAPI.getObjectives(filters);
+      setObjectives(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore nel caricamento degli obiettivi');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchObjectives();
+  }, [fetchObjectives, refreshTrigger]);
+
+  const filteredObjectives = objectives.filter(obj => {
+    // Filter by permissions (admin sees all, others see their own)
+    if (currentUser.role !== 'admin' && obj.ownerId !== currentUser.id) {
       return false;
     }
-
-    // Then, filter by tab
-    if (activeTab === 'all') return true;
-    return obj.level === activeTab;
+    return true;
   });
+
+  const tabLabels: Record<string, string> = {
+    all: 'Tutti',
+    company: 'Azienda',
+    team: 'Team',
+    individual: 'Individuali'
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Objectives & Key Results</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Obiettivi & Key Results</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {currentUser.role === 'super-admin' 
-              ? 'Viewing all company objectives' 
-              : `Viewing objectives for ${currentUser.name}`}
+            {currentUser.role === 'admin'
+              ? 'Visualizzazione di tutti gli obiettivi aziendali'
+              : `Obiettivi di ${currentUser.name}`}
           </p>
         </div>
-        <Button onClick={onCreateClick} icon={ICONS.Plus}>
-          Create OKR
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchObjectives}
+            disabled={isLoading}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Aggiorna"
+          >
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <Button onClick={onCreateClick} icon={ICONS.Plus}>
+            Crea OKR
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 pb-1">
-        {['all', 'company', 'team'].map((tab) => (
+        {(['all', 'company', 'team', 'individual'] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-4 py-2 text-sm font-medium transition-colors relative capitalize ${
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
               activeTab === tab ? 'text-black' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab}
+            {tabLabels[tab]}
             {activeTab === tab && (
               <span className="absolute bottom-[-5px] left-0 w-full h-0.5 bg-black rounded-full"></span>
             )}
@@ -57,15 +95,41 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, currentUser }) => {
         ))}
       </div>
 
-      <div className="space-y-4">
-        {filteredObjectives.length === 0 ? (
-           <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-             <div className="text-gray-400 mb-2">{ICONS.Target}</div>
-             <p className="text-gray-500 font-medium">No objectives found for this view.</p>
-           </div>
-        ) : (
-          filteredObjectives.map((obj) => (
-            <Card key={obj.id} className="transition-shadow hover:shadow-md">
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-red-600 text-sm">
+          {error}
+          <button onClick={fetchObjectives} className="ml-2 underline">Riprova</button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      )}
+
+      {!isLoading && (
+        <div className="space-y-4">
+          {filteredObjectives.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-gray-200">
+              <div className="text-gray-400 mb-2">{ICONS.Target}</div>
+              <p className="text-gray-500 font-medium">Nessun obiettivo trovato per questa vista.</p>
+              <button
+                onClick={onCreateClick}
+                className="mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm"
+              >
+                Crea il tuo primo OKR
+              </button>
+            </div>
+          ) : (
+            filteredObjectives.map((obj) => (
+            <Card
+              key={obj.id}
+              className="transition-shadow hover:shadow-md cursor-pointer"
+              onClick={() => onSelectOKR(obj.id)}
+            >
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Left Side: Objective Info */}
                 <div className="flex-1">
@@ -137,9 +201,10 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, currentUser }) => {
                 </div>
               </div>
             </Card>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
