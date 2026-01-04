@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -113,7 +114,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] font-sans">
+    <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-gray-900 font-sans transition-colors duration-300">
       <Sidebar currentView={currentView} onChangeView={setCurrentView} />
 
       <main className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-y-auto">
@@ -148,9 +149,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

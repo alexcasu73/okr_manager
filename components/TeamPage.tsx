@@ -282,8 +282,8 @@ const TeamPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team</h1>
-          <p className="text-gray-500">Manage your team members and invitations</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Team</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage your team members and invitations</p>
         </div>
         <button
           onClick={() => setIsCreateTeamModalOpen(true)}
@@ -295,10 +295,10 @@ const TeamPage: React.FC = () => {
       </div>
 
       {teams.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center">
-          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No teams yet</h3>
-          <p className="text-gray-500 mb-6">Create your first team to start collaborating</p>
+        <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 text-center">
+          <Users className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No teams yet</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first team to start collaborating</p>
           <button
             onClick={() => setIsCreateTeamModalOpen(true)}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700"
@@ -311,8 +311,8 @@ const TeamPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Team Selector */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-3">Your Teams</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-gray-900/20">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Your Teams</h3>
               <div className="space-y-2">
                 {teams.map((team) => (
                   <button
@@ -320,12 +320,12 @@ const TeamPage: React.FC = () => {
                     onClick={() => setSelectedTeam(team)}
                     className={`w-full text-left p-3 rounded-xl transition-colors ${
                       selectedTeam?.id === team.id
-                        ? 'bg-blue-50 border-2 border-blue-200'
-                        : 'hover:bg-gray-50 border-2 border-transparent'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-transparent'
                     }`}
                   >
-                    <p className="font-medium text-gray-900">{team.name}</p>
-                    <p className="text-sm text-gray-500">{team.memberCount} members</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{team.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{team.memberCount} members</p>
                   </button>
                 ))}
               </div>
@@ -337,12 +337,12 @@ const TeamPage: React.FC = () => {
             {selectedTeam && (
               <>
                 {/* Team Header */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm dark:shadow-gray-900/20">
                   <div className="flex items-center justify-between min-h-[44px]">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">{selectedTeam.name}</h2>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedTeam.name}</h2>
                       {selectedTeam.description && (
-                        <p className="text-gray-500 mt-1">{selectedTeam.description}</p>
+                        <p className="text-gray-500 dark:text-gray-400 mt-1">{selectedTeam.description}</p>
                       )}
                     </div>
                     {canManageTeam ? (

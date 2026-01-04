@@ -11,7 +11,7 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white rounded-3xl p-6 shadow-sm flex flex-col ${className}`}
+      className={`bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm dark:shadow-gray-900/20 flex flex-col transition-colors duration-300 ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({ children, className = '', title, act
     >
       {(title || action) && (
         <div className="flex justify-between items-center mb-6">
-          {title && <h3 className="text-lg font-bold text-gray-800">{title}</h3>}
+          {title && <h3 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h3>}
           {action && <div>{action}</div>}
         </div>
       )}
@@ -101,7 +101,7 @@ interface ProgressBarProps {
 export const ProgressBar: React.FC<ProgressBarProps> = ({ value, max = 100, color = 'bg-blue-500', height = 'h-2' }) => {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
   return (
-    <div className={`w-full bg-gray-100 rounded-full ${height}`}>
+    <div className={`w-full bg-gray-100 dark:bg-gray-700 rounded-full ${height}`}>
       <div
         className={`${height} rounded-full transition-all duration-500 ${color}`}
         style={{ width: `${percentage}%` }}

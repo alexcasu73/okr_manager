@@ -42,31 +42,31 @@ const Header: React.FC<HeaderProps> = ({ onSelectOKR }) => {
     <header className="flex items-center justify-end mb-8 gap-4">
       {/* Right Actions */}
       <div className="flex items-center gap-4">
-        <button className="relative bg-white p-3 rounded-xl shadow-sm text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">
+        <button className="relative bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm dark:shadow-gray-900/20 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:block">
           {ICONS.Statistics}
         </button>
         <div className="hidden sm:block">
           <NotificationCenter onSelectOKR={onSelectOKR} />
         </div>
 
-        <div className="h-8 w-px bg-gray-200 mx-2 hidden sm:block"></div>
+        <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block"></div>
 
         {/* Profile */}
-        <div className="flex items-center gap-3 pl-2 bg-white p-2 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3 pl-2 bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm dark:shadow-gray-900/20">
           <img
             src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=3B82F6&color=fff`}
             alt={user.name}
-            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+            className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm"
           />
           <div className="flex flex-col">
-            <p className="text-sm font-bold text-gray-900 leading-none mb-0.5">{user.name}</p>
-            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none mb-0.5">{user.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
           </div>
 
           {/* Logout button */}
           <button
             onClick={handleLogout}
-            className="ml-2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            className="ml-2 p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             title="Logout"
           >
             <LogOut className="w-5 h-5" />

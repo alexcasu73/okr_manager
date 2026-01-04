@@ -55,8 +55,8 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Obiettivi & Key Results</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Obiettivi & Key Results</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {currentUser.role === 'admin'
               ? 'Visualizzazione di tutti gli obiettivi aziendali'
               : `Obiettivi di ${currentUser.name}`}
@@ -66,7 +66,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
           <button
             onClick={fetchObjectives}
             disabled={isLoading}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             title="Aggiorna"
           >
             <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -78,18 +78,18 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-1">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-1">
         {(['all', 'company', 'team', 'individual'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              activeTab === tab ? 'text-black' : 'text-gray-500 hover:text-gray-700'
+              activeTab === tab ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {tabLabels[tab]}
             {activeTab === tab && (
-              <span className="absolute bottom-[-5px] left-0 w-full h-0.5 bg-black rounded-full"></span>
+              <span className="absolute bottom-[-5px] left-0 w-full h-0.5 bg-black dark:bg-white rounded-full"></span>
             )}
           </button>
         ))}
@@ -113,11 +113,11 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
       {!isLoading && (
         <div className="space-y-4">
           {filteredObjectives.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-              <p className="text-gray-500 font-medium">Nessun obiettivo trovato per questa vista.</p>
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+              <p className="text-gray-500 dark:text-gray-400 font-medium">Nessun obiettivo trovato per questa vista.</p>
               <button
                 onClick={onCreateClick}
-                className="mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
               >
                 Crea il tuo primo OKR
               </button>
@@ -135,26 +135,26 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[obj.status].split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></span>
-                      <h3 className="text-lg font-bold text-gray-900">{obj.title}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">{obj.title}</h3>
                       <Badge className="ml-2 capitalize">{obj.period}</Badge>
                     </div>
-                    <button className="text-gray-400 hover:text-gray-600">
+                    <button className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                       {ICONS.More}
                     </button>
                   </div>
-                  
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">
                     {obj.description}
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-6">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-6">
                     <div className="flex items-center gap-1">
-                      <span className="bg-gray-100 p-1 rounded-full">{ICONS.Target}</span>
+                      <span className="bg-gray-100 dark:bg-gray-700 p-1 rounded-full">{ICONS.Target}</span>
                       <span className="capitalize">{obj.level}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {/* Owner display could be improved by looking up user details from ID */}
-                      <span className="bg-gray-100 px-2 py-0.5 rounded-md font-medium text-gray-600">
+                      <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md font-medium text-gray-600 dark:text-gray-300">
                         {obj.ownerId === currentUser.id ? 'You' : obj.ownerId}
                       </span>
                     </div>
@@ -162,7 +162,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-bold text-gray-900">{obj.progress}%</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{obj.progress}%</span>
                     <ProgressBar 
                         value={obj.progress} 
                         color={PROGRESS_COLORS[obj.status as keyof typeof PROGRESS_COLORS] ? `bg-[${PROGRESS_COLORS[obj.status as keyof typeof PROGRESS_COLORS]}]` : 'bg-blue-500'} 
@@ -171,21 +171,21 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                 </div>
 
                 {/* Right Side: Key Results */}
-                <div className="flex-1 bg-gray-50 rounded-2xl p-4">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Key Results</h4>
+                <div className="flex-1 bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-3">Key Results</h4>
                   <div className="space-y-3">
                     {obj.keyResults.map((kr) => (
-                      <div key={kr.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                      <div key={kr.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-start mb-2">
-                          <p className="text-sm font-medium text-gray-800 line-clamp-1">{kr.description}</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{kr.description}</p>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${STATUS_COLORS[kr.status]}`}>
                             {kr.status}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <div className="flex-1 bg-gray-200 rounded-full h-1.5">
-                            <div 
-                              className="bg-gray-400 h-1.5 rounded-full" 
+                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                            <div
+                              className="bg-gray-400 dark:bg-gray-400 h-1.5 rounded-full"
                               style={{ width: `${(kr.currentValue / kr.targetValue) * 100}%` }}
                             ></div>
                           </div>
@@ -194,7 +194,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                       </div>
                     ))}
                     {obj.keyResults.length === 0 && (
-                      <p className="text-xs text-gray-400 italic">No key results defined.</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 italic">No key results defined.</p>
                     )}
                   </div>
                 </div>

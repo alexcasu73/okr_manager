@@ -158,12 +158,12 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl dark:shadow-gray-900/50">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {step === 1 ? 'Nuovo Obiettivo' : 'Key Results'}
           </h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600" disabled={isSubmitting}>
+          <button onClick={handleClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" disabled={isSubmitting}>
             {ICONS.Error}
           </button>
         </div>
@@ -179,10 +179,10 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titolo Obiettivo *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titolo Obiettivo *</label>
                 <input
                   type="text"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   placeholder="es. Aumentare la brand awareness"
                   value={formData.title}
                   onChange={e => setFormData({...formData, title: e.target.value})}
@@ -192,9 +192,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrizione</label>
                 <textarea
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
                   placeholder="Descrivi l'obiettivo in dettaglio..."
                   rows={3}
                   value={formData.description}
@@ -205,9 +205,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Livello</label>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Livello</label>
                    <select
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                       value={formData.level}
                       onChange={e => setFormData({...formData, level: e.target.value as typeof formData.level})}
                       disabled={isSubmitting}
@@ -219,9 +219,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                    </select>
                 </div>
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Periodo</label>
                    <select
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                       value={formData.period}
                       onChange={e => setFormData({...formData, period: e.target.value})}
                       disabled={isSubmitting}
@@ -237,11 +237,11 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assegnato a *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assegnato a *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <select
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                       value={formData.ownerId}
                       onChange={e => setFormData({...formData, ownerId: e.target.value})}
                       disabled={isSubmitting || isLoadingUsers}
