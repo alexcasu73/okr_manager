@@ -1,0 +1,113 @@
+import React from 'react';
+import { ICONS } from '../constants';
+import { ViewMode } from '../types';
+
+interface NavItemProps {
+  item: {
+    id: string;
+    label: string;
+    icon: React.ReactNode;
+  };
+  active?: boolean;
+  onClick: (id: string) => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ item, active, onClick }) => (
+  <button
+    onClick={() => onClick(item.id)}
+    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 mb-1
+      ${active 
+        ? 'bg-black text-white shadow-lg shadow-gray-200' 
+        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+      }`}
+  >
+    <span className={active ? 'text-white' : 'text-gray-500'}>
+      {item.icon}
+    </span>
+    <span className="font-medium text-sm">{item.label}</span>
+  </button>
+);
+
+interface SidebarProps {
+  currentView: ViewMode;
+  onChangeView: (view: ViewMode) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
+    { id: 'okrs', label: 'Objectives', icon: ICONS.Target },
+    { id: 'team', label: 'My Team', icon: ICONS.Team },
+    { id: 'reports', label: 'Analytics', icon: ICONS.Analytics },
+  ];
+
+  const bottomItems = [
+    { id: 'settings', label: 'Settings', icon: ICONS.Settings },
+    { id: 'help', label: 'Help', icon: <span className="text-xl font-bold flex items-center justify-center w-5 h-5 border border-gray-400 rounded-full text-[10px] text-gray-500">?</span> },
+  ];
+
+  return (
+    <div className="w-64 min-h-screen bg-white flex flex-col p-6 border-r border-gray-100 fixed left-0 top-0 z-10 hidden lg:flex">
+      {/* Logo */}
+      <div className="flex items-center gap-2 mb-10 px-2">
+        <div className="bg-black text-white p-1.5 rounded-lg">
+           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 tracking-tight">OKR Manager</h1>
+      </div>
+
+      <div className="mb-2">
+        <p className="text-xs font-medium text-gray-400 uppercase px-4 mb-4">Menu</p>
+        <nav className="space-y-1">
+          {menuItems.map((item) => (
+            <NavItem 
+              key={item.id} 
+              item={item} 
+              active={currentView === item.id}
+              onClick={(id) => onChangeView(id as ViewMode)}
+            />
+          ))}
+        </nav>
+      </div>
+
+      <div className="mt-8 mb-auto">
+        <p className="text-xs font-medium text-gray-400 uppercase px-4 mb-4">Support</p>
+        <nav className="space-y-1">
+          {bottomItems.map((item) => (
+            <NavItem 
+              key={item.id} 
+              item={item} 
+              active={currentView === item.id}
+              onClick={(id) => onChangeView(id as ViewMode)}
+            />
+          ))}
+        </nav>
+      </div>
+
+      {/* Promo Card */}
+      <div className="bg-gray-100 rounded-3xl p-5 mb-6 relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="bg-black text-white w-8 h-8 flex items-center justify-center rounded-full mb-3 text-xs">OM</div>
+          <p className="text-sm font-semibold text-gray-800 mb-1">Boost Productivity</p>
+          <p className="text-xs text-gray-500 mb-4 leading-relaxed">Align your team goals and track success efficiently.</p>
+          <button className="bg-black text-white text-xs px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors">
+            Start Now
+          </button>
+        </div>
+        {/* Abstract shape decoration */}
+        <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-200 rounded-full opacity-50 blur-xl"></div>
+      </div>
+
+      <button className="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors mt-2 text-sm font-medium">
+        {ICONS.Logout}
+        <span>Logout</span>
+      </button>
+    </div>
+  );
+};
+
+export default Sidebar;
