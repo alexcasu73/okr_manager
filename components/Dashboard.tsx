@@ -139,8 +139,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         const metrics = obj.healthMetrics;
         if (!metrics) return false;
         return metrics.riskLevel === 'medium' ||
-               metrics.riskLevel === 'high' ||
-               metrics.riskLevel === 'critical';
+          metrics.riskLevel === 'high' ||
+          metrics.riskLevel === 'critical';
       })
       .sort((a, b) => {
         // Sort by risk level (critical > high > medium)
@@ -245,381 +245,380 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 py-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {currentUser.role === 'admin' ? 'Panoramica aziendale' : `Benvenuto, ${currentUser.name}`}
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        {currentUser.role === 'admin' ? 'Panoramica aziendale' : `Benvenuto, ${currentUser.name}`}
+      </p>
+    </div>
+    <span className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm dark:shadow-gray-900/20">
+      {stats.total} Obiettivi attivi
+    </span>
+  </div>
+
+  {/* Stats Cards */ }
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <UITooltip
+      content={
+        <div className="space-y-1">
+          <p className="font-medium">Obiettivi Totali</p>
+          <p>Numero totale di OKR in tutti gli stati.</p>
+          <p className="text-gray-300 text-[10px] mt-1">
+            In linea: {stats.onTrack} | A rischio: {stats.atRisk} | Completati: {stats.completed}
           </p>
         </div>
-        <span className="text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl shadow-sm dark:shadow-gray-900/20">
-          {stats.total} Obiettivi attivi
-        </span>
-      </div>
+      }
+      position="bottom"
+    >
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+        <div className="flex items-start justify-between h-full">
+          <div className="flex flex-col justify-between h-full">
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Obiettivi Totali</p>
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{stats.draft} in bozza</p>
+          </div>
+          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl">
+            <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+        </div>
+      </Card>
+    </UITooltip>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <UITooltip
-          content={
-            <div className="space-y-1">
-              <p className="font-medium">Obiettivi Totali</p>
-              <p>Numero totale di OKR in tutti gli stati.</p>
-              <p className="text-gray-300 text-[10px] mt-1">
-                In linea: {stats.onTrack} | A rischio: {stats.atRisk} | Completati: {stats.completed}
-              </p>
-            </div>
-          }
-          position="bottom"
-        >
-          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
-            <div className="flex items-start justify-between h-full">
-              <div className="flex flex-col justify-between h-full">
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Obiettivi Totali</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{stats.draft} in bozza</p>
-              </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl">
-                <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </Card>
-        </UITooltip>
+    <UITooltip
+      content={
+        <div className="space-y-1">
+          <p className="font-medium">Progresso Medio</p>
+          <p>Media ponderata del progresso di tutti gli OKR attivi.</p>
+          <p className="text-gray-300 text-[10px] mt-1">
+            Basato su {stats.total - stats.draft} obiettivi attivi
+          </p>
+        </div>
+      }
+      position="bottom"
+    >
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+        <div className="flex items-start justify-between h-full">
+          <div className="flex flex-col justify-between h-full flex-1 mr-3">
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Progresso Medio</p>
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.avgProgress}%</h3>
+            <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
+          </div>
+          <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-2xl">
+            <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+          </div>
+        </div>
+      </Card>
+    </UITooltip>
 
-        <UITooltip
-          content={
-            <div className="space-y-1">
-              <p className="font-medium">Progresso Medio</p>
-              <p>Media ponderata del progresso di tutti gli OKR attivi.</p>
-              <p className="text-gray-300 text-[10px] mt-1">
-                Basato su {stats.total - stats.draft} obiettivi attivi
-              </p>
-            </div>
-          }
-          position="bottom"
-        >
-          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
-            <div className="flex items-start justify-between h-full">
-              <div className="flex flex-col justify-between h-full flex-1 mr-3">
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Progresso Medio</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.avgProgress}%</h3>
-                <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
-              </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-2xl">
-                <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </Card>
-        </UITooltip>
+    <UITooltip
+      content={
+        <div className="space-y-1">
+          <p className="font-medium">Ritmo Medio</p>
+          <p>Rapporto tra progresso attuale e progresso atteso in base al tempo.</p>
+          <p className="text-gray-300 text-[10px] mt-1">
+            100% = perfettamente in linea | &lt;80% = in ritardo
+          </p>
+          {paceStats.avgPaceRatio < 0.8 && (
+            <p className="text-yellow-300 text-[10px]">
+              ⚠️ Il team è in ritardo rispetto alla pianificazione
+            </p>
+          )}
+        </div>
+      }
+      position="bottom"
+    >
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+        <div className="flex items-start justify-between h-full">
+          <div className="flex flex-col justify-between h-full">
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Ritmo Medio</p>
+            <h3 className={`text-3xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
+              {Math.round(paceStats.avgPaceRatio * 100)}%
+            </h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
+          </div>
+          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl">
+            <Gauge className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+        </div>
+      </Card>
+    </UITooltip>
 
-        <UITooltip
-          content={
-            <div className="space-y-1">
-              <p className="font-medium">Ritmo Medio</p>
-              <p>Rapporto tra progresso attuale e progresso atteso in base al tempo.</p>
-              <p className="text-gray-300 text-[10px] mt-1">
-                100% = perfettamente in linea | &lt;80% = in ritardo
-              </p>
-              {paceStats.avgPaceRatio < 0.8 && (
-                <p className="text-yellow-300 text-[10px]">
-                  ⚠️ Il team è in ritardo rispetto alla pianificazione
-                </p>
-              )}
-            </div>
-          }
-          position="bottom"
-        >
-          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
-            <div className="flex items-start justify-between h-full">
-              <div className="flex flex-col justify-between h-full">
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Ritmo Medio</p>
-                <h3 className={`text-3xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
-                  {Math.round(paceStats.avgPaceRatio * 100)}%
-                </h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
-              </div>
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl">
-                <Gauge className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-              </div>
-            </div>
-          </Card>
-        </UITooltip>
+    <UITooltip
+      content={
+        <div className="space-y-1">
+          <p className="font-medium">Completati</p>
+          <p>OKR che hanno raggiunto il 100% di progresso.</p>
+          <p className="text-gray-300 text-[10px] mt-1">
+            Tasso di completamento: {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+          </p>
+        </div>
+      }
+      position="bottom"
+    >
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+        <div className="flex items-start justify-between h-full">
+          <div className="flex flex-col justify-between h-full">
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Completati</p>
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.completed}</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
+          </div>
+          <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
+            <CheckCircle2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          </div>
+        </div>
+      </Card>
+    </UITooltip>
+  </div>
 
-        <UITooltip
-          content={
-            <div className="space-y-1">
-              <p className="font-medium">Completati</p>
-              <p>OKR che hanno raggiunto il 100% di progresso.</p>
-              <p className="text-gray-300 text-[10px] mt-1">
-                Tasso di completamento: {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
-              </p>
+  {/* Main Content Grid */ }
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {/* First two columns - 2x2 grid */}
+    <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Row 1 */}
+      <Card title="Distribuzione per Stato" className="min-h-[260px] max-h-[400px] flex flex-col">
+        {stats.total === 0 ? (
+          <div className="h-full flex items-center justify-center text-gray-400">
+            Nessun obiettivo
+          </div>
+        ) : (
+          <div className="h-full flex flex-col">
+            <div className="flex-1 relative min-h-[120px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    innerRadius={40}
+                    outerRadius={55}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Totale</p>
+              </div>
             </div>
-          }
-          position="bottom"
-        >
-          <Card className="relative overflow-hidden cursor-help w-full h-[120px]">
-            <div className="flex items-start justify-between h-full">
-              <div className="flex flex-col justify-between h-full">
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">Completati</p>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{stats.completed}</h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
-              </div>
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
-                <CheckCircle2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-          </Card>
-        </UITooltip>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* First two columns - 2x2 grid */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Row 1 */}
-          <Card title="Distribuzione per Stato" className="h-[280px]">
-            {stats.total === 0 ? (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Nessun obiettivo
-              </div>
-            ) : (
-              <div className="h-full flex flex-col">
-                <div className="flex-1 relative min-h-[120px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusDistribution}
-                        innerRadius={40}
-                        outerRadius={55}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">Totale</p>
+            <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+              {statusDistribution.map((status) => (
+                <div key={status.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+                    <span className="text-gray-600 dark:text-gray-400">{status.name}</span>
                   </div>
-                </div>
-                <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  {statusDistribution.map((status) => (
-                    <div key={status.name} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
-                        <span className="text-gray-600 dark:text-gray-400">{status.name}</span>
-                      </div>
-                      <span className="font-semibold text-gray-900 dark:text-white">{status.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* Scadenze Imminenti - Row 1 */}
-          <Card title="Scadenze Imminenti" className="h-[280px]" action={
-            <span className="text-xs text-gray-400">Prossimi 14 giorni</span>
-          }>
-            {upcomingDeadlines.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-                Nessuna scadenza imminente
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {upcomingDeadlines.slice(0, 3).map((obj) => {
-                  const daysLeft = getDaysUntilDue(obj.dueDate);
-                  const isUrgent = daysLeft <= 3;
-
-                  return (
-                    <div key={obj.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                      <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-                        <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(obj.dueDate)}</p>
-                      </div>
-                      <div className={`text-xs font-medium px-2 py-1 rounded-lg ${
-                        isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-                      }`}>
-                        {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* Obiettivi per Livello - Row 2 */}
-          <Card title="Obiettivi per Livello" className="h-[280px]">
-            <div className="space-y-3">
-              {levelDistribution.map((level) => (
-                <div key={level.name} className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${level.color}`}>
-                    <level.icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{level.name}</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{level.value}</span>
-                    </div>
-                    <div className="mt-1">
-                      <ProgressBar
-                        value={stats.total > 0 ? (level.value / stats.total) * 100 : 0}
-                        height="h-1"
-                        color="bg-gray-300"
-                      />
-                    </div>
-                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{status.value}</span>
                 </div>
               ))}
             </div>
-          </Card>
-
-          {/* OKR sotto monitoraggio - Row 2 */}
-          <Card title="OKR sotto monitoraggio" className="h-[280px]" action={
-            <span className="text-xs text-orange-500 font-medium">
-              {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
-            </span>
-          }>
-            {needsAttention.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
-                <CheckCircle2 className="w-8 h-8 mb-2 text-green-400" />
-                Tutti gli OKR sono in linea
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {needsAttention.slice(0, 3).map((obj) => {
-                  const metrics = obj.healthMetrics!;
-                  const riskConfig = riskLevelConfig[metrics.riskLevel];
-                  const RiskIcon = riskConfig.icon;
-
-                  return (
-                    <div key={obj.id} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
-                          <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
-                              {riskConfig.label}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">{obj.progress}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Recently Updated */}
-        <div className="flex flex-col">
-          <Card title="Aggiornati di Recente" className="flex-1">
-            {recentlyUpdated.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-sm">
-                Nessun obiettivo
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentlyUpdated.map((obj) => (
-                  <UITooltip
-                    key={obj.id}
-                    position="left"
-                    content={
-                      <div className="space-y-1 min-w-[200px]">
-                        <p className="font-medium">{obj.title}</p>
-                        <div className="text-[10px] text-gray-300 space-y-1">
-                          <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
-                          <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
-                          <p>🎯 Key Results: {obj.keyResults.length}</p>
-                          {obj.keyResults.length > 0 && (
-                            <>
-                              <hr className="border-gray-600 my-1" />
-                              {obj.keyResults.slice(0, 3).map((kr, idx) => (
-                                <p key={kr.id} className="truncate">
-                                  {idx + 1}. {kr.description} ({Math.round(((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100)}%)
-                                </p>
-                              ))}
-                              {obj.keyResults.length > 3 && (
-                                <p className="text-gray-400">...e altri {obj.keyResults.length - 3}</p>
-                              )}
-                            </>
-                          )}
-                          <hr className="border-gray-600 my-1" />
-                          <p>🕐 Aggiornato: {obj.updatedAt ? new Date(obj.updatedAt).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <div className="group cursor-help">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-xl ${
-                          obj.status === 'completed' ? 'bg-green-100' :
-                          obj.status === 'at-risk' ? 'bg-orange-100' :
-                          obj.status === 'off-track' ? 'bg-red-100' :
-                          'bg-blue-100'
-                        }`}>
-                          <Target className={`w-4 h-4 ${
-                            obj.status === 'completed' ? 'text-green-600' :
-                            obj.status === 'at-risk' ? 'text-orange-600' :
-                            obj.status === 'off-track' ? 'text-red-600' :
-                            'text-blue-600'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
-                              {statusLabels[obj.status] || obj.status}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">{obj.period}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">{obj.progress}%</span>
-                        </div>
-                      </div>
-                      <div className="mt-2 ml-11">
-                        <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
-                      </div>
-                      {obj.keyResults.length > 0 && (
-                        <div className="mt-2 ml-11 text-xs text-gray-400 dark:text-gray-500">
-                          {obj.keyResults.length} Key Results
-                        </div>
-                      )}
-                    </div>
-                  </UITooltip>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {stats.total === 0 && (
-        <Card className="text-center py-12">
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Nessun obiettivo ancora</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Inizia creando il tuo primo OKR per tracciare i progressi</p>
-        </Card>
-      )}
+        )}
+      </Card>
+
+      {/* Scadenze Imminenti - Row 1 */}
+      <Card title="Scadenze Imminenti" className="min-h-[260px] max-h-[400px] flex flex-col" action={
+        <span className="text-xs text-gray-400">Prossimi 14 giorni</span>
+      }>
+        {upcomingDeadlines.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+            Nessuna scadenza imminente
+          </div>
+        ) : (
+          <div className="space-y-3 overflow-y-auto flex-1">
+            {upcomingDeadlines.slice(0, 3).map((obj) => {
+              const daysLeft = getDaysUntilDue(obj.dueDate);
+              const isUrgent = daysLeft <= 3;
+
+              return (
+                <div key={obj.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                  <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                    <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(obj.dueDate)}</p>
+                  </div>
+                  <div className={`text-xs font-medium px-2 py-1 rounded-lg ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                    {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* Obiettivi per Livello - Row 2 */}
+      <Card title="Obiettivi per Livello" className="min-h-[260px] max-h-[400px] flex flex-col">
+        <div className="space-y-3 flex-1 overflow-y-auto">
+          {levelDistribution.map((level) => (
+            <div key={level.name} className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl ${level.color}`}>
+                <level.icon className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{level.name}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{level.value}</span>
+                </div>
+                <div className="mt-1">
+                  <ProgressBar
+                    value={stats.total > 0 ? (level.value / stats.total) * 100 : 0}
+                    height="h-1"
+                    color="bg-gray-300"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* OKR sotto monitoraggio - Row 2 */}
+      <Card title="OKR sotto monitoraggio" className="min-h-[260px] max-h-[400px] flex flex-col" action={
+        <span className="text-xs text-orange-500 font-medium">
+          {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
+        </span>
+      }>
+        {needsAttention.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
+            <CheckCircle2 className="w-8 h-8 mb-2 text-green-400" />
+            Tutti gli OKR sono in linea
+          </div>
+        ) : (
+          <div className="space-y-2 overflow-y-auto flex-1">
+            {needsAttention.slice(0, 3).map((obj) => {
+              const metrics = obj.healthMetrics!;
+              const riskConfig = riskLevelConfig[metrics.riskLevel];
+              const RiskIcon = riskConfig.icon;
+
+              return (
+                <div key={obj.id} className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
+                      <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
+                          {riskConfig.label}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{obj.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
     </div>
+
+    {/* Recently Updated */}
+    <div className="flex flex-col">
+      <Card title="Aggiornati di Recente" className="flex-1">
+        {recentlyUpdated.length === 0 ? (
+          <div className="py-8 text-center text-gray-400 text-sm">
+            Nessun obiettivo
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentlyUpdated.map((obj) => (
+              <UITooltip
+                key={obj.id}
+                position="left"
+                content={
+                  <div className="space-y-1 min-w-[200px]">
+                    <p className="font-medium">{obj.title}</p>
+                    <div className="text-[10px] text-gray-300 space-y-1">
+                      <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
+                      <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
+                      <p>🎯 Key Results: {obj.keyResults.length}</p>
+                      {obj.keyResults.length > 0 && (
+                        <>
+                          <hr className="border-gray-600 my-1" />
+                          {obj.keyResults.slice(0, 3).map((kr, idx) => (
+                            <p key={kr.id} className="truncate">
+                              {idx + 1}. {kr.description} ({Math.round(((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100)}%)
+                            </p>
+                          ))}
+                          {obj.keyResults.length > 3 && (
+                            <p className="text-gray-400">...e altri {obj.keyResults.length - 3}</p>
+                          )}
+                        </>
+                      )}
+                      <hr className="border-gray-600 my-1" />
+                      <p>🕐 Aggiornato: {obj.updatedAt ? new Date(obj.updatedAt).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                    </div>
+                  </div>
+                }
+              >
+                <div className="group cursor-help">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-xl ${obj.status === 'completed' ? 'bg-green-100' :
+                      obj.status === 'at-risk' ? 'bg-orange-100' :
+                        obj.status === 'off-track' ? 'bg-red-100' :
+                          'bg-blue-100'
+                      }`}>
+                      <Target className={`w-4 h-4 ${obj.status === 'completed' ? 'text-green-600' :
+                        obj.status === 'at-risk' ? 'text-orange-600' :
+                          obj.status === 'off-track' ? 'text-red-600' :
+                            'text-blue-600'
+                        }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{obj.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
+                          {statusLabels[obj.status] || obj.status}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{obj.period}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">{obj.progress}%</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 ml-11">
+                    <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
+                  </div>
+                  {obj.keyResults.length > 0 && (
+                    <div className="mt-2 ml-11 text-xs text-gray-400 dark:text-gray-500">
+                      {obj.keyResults.length} Key Results
+                    </div>
+                  )}
+                </div>
+              </UITooltip>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  </div>
+
+  {/* Empty State */ }
+  {
+    stats.total === 0 && (
+      <Card className="text-center py-12">
+        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Nessun obiettivo ancora</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Inizia creando il tuo primo OKR per tracciare i progressi</p>
+      </Card>
+    )
+  }
+    </div >
   );
 };
 

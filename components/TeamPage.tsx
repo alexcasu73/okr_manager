@@ -3,12 +3,14 @@ import { teamAPI, Team, TeamMember, TeamInvitation, SearchUser } from '../api/cl
 import { useAuth } from '../context/AuthContext';
 import InviteMemberModal from './InviteMemberModal';
 import CreateTeamModal from './CreateTeamModal';
+import EditTeamModal from './EditTeamModal';
 import {
   Users,
   Plus,
   Mail,
   Crown,
   Shield,
+  Edit,
   User,
   MoreVertical,
   Trash2,
@@ -35,6 +37,11 @@ const TeamPage: React.FC = () => {
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
 
   // Load teams on mount
   useEffect(() => {
@@ -102,6 +109,31 @@ const TeamPage: React.FC = () => {
     } catch (err) {
       throw err;
     }
+  };
+
+  const handleUpdateTeam = async (data: { name: string; description?: string }) => {
+    if (!teamToEdit) return;
+    try {
+      const updatedTeam = await teamAPI.updateTeam(teamToEdit.id, data);
+
+      // Update team in list
+      setTeams(teams.map(t => t.id === updatedTeam.id ? updatedTeam : t));
+
+      // Update selected team if it's the one being edited
+      if (selectedTeam?.id === updatedTeam.id) {
+        setSelectedTeam(updatedTeam);
+      }
+
+      setIsEditModalOpen(false);
+      setTeamToEdit(null);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const openEditModal = (team: Team) => {
+    setTeamToEdit(team);
+    setIsEditModalOpen(true);
   };
 
   const handleInviteMember = async (email: string, role: 'admin' | 'member') => {
@@ -191,6 +223,38 @@ const TeamPage: React.FC = () => {
     } catch (err) {
       setError('Failed to decline invitation');
     }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!teamToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await teamAPI.deleteTeam(teamToDelete.id);
+
+      // Remove team from list
+      const updatedTeams = teams.filter(t => t.id !== teamToDelete.id);
+      setTeams(updatedTeams);
+
+      // If deleted team was selected, select another team
+      if (selectedTeam?.id === teamToDelete.id) {
+        setSelectedTeam(updatedTeams.length > 0 ? updatedTeams[0] : null);
+      }
+
+      // Close modal and reset state
+      setIsDeleteModalOpen(false);
+      setTeamToDelete(null);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete team');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteConfirmation = (team: Team) => {
+    setTeamToDelete(team);
+    setIsDeleteModalOpen(true);
   };
 
   const getRoleIcon = (role: string) => {
@@ -318,11 +382,10 @@ const TeamPage: React.FC = () => {
                   <button
                     key={team.id}
                     onClick={() => setSelectedTeam(team)}
-                    className={`w-full text-left p-3 rounded-xl transition-colors ${
-                      selectedTeam?.id === team.id
-                        ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-transparent'
-                    }`}
+                    className={`w-full text-left p-3 rounded-xl transition-colors ${selectedTeam?.id === team.id
+                      ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-transparent'
+                      }`}
                   >
                     <p className="font-medium text-gray-900 dark:text-white">{team.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{team.memberCount} members</p>
@@ -345,17 +408,37 @@ const TeamPage: React.FC = () => {
                         <p className="text-gray-500 dark:text-gray-400 mt-1">{selectedTeam.description}</p>
                       )}
                     </div>
-                    {canManageTeam ? (
-                      <button
-                        onClick={() => setIsInviteModalOpen(true)}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
-                      >
-                        <Plus className="w-5 h-5" />
-                        Add Member
-                      </button>
-                    ) : (
-                      <div className="w-[140px]" />
-                    )}
+                    <div className="flex items-center gap-3">
+                      {canManageTeam && (
+                        <>
+                          <button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus className="w-5 h-5" />
+                            Add Member
+                          </button>
+                          <button
+                            onClick={() => openEditModal(selectedTeam)}
+                            className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-xl hover:bg-gray-700 transition-colors"
+                            title="Edit team"
+                          >
+                            <Edit className="w-5 h-5" />
+                            Edit
+                          </button>
+                        </>
+                      )}
+                      {currentUserRole === 'owner' && (
+                        <button
+                          onClick={() => openDeleteConfirmation(selectedTeam)}
+                          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors"
+                          title="Delete team"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                          Delete Team
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -485,6 +568,77 @@ const TeamPage: React.FC = () => {
         onClose={() => setIsCreateTeamModalOpen(false)}
         onCreate={handleCreateTeam}
       />
+
+      <EditTeamModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUpdate={handleUpdateTeam}
+        currentName={teamToEdit?.name || ''}
+        currentDescription={teamToEdit?.description}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && teamToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !isDeleting && setIsDeleteModalOpen(false)} />
+          <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-xl">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Delete Team?</h2>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="mb-6">
+              <p className="text-gray-700 mb-2">
+                Are you sure you want to delete <strong>{teamToDelete.name}</strong>?
+              </p>
+              <p className="text-sm text-gray-600">
+                This will permanently remove:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
+                <li>All team members ({teamToDelete.memberCount} members)</li>
+                <li>All pending invitations</li>
+                <li>All team data</li>
+              </ul>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTeam}
+                disabled={isDeleting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-5 h-5" />
+                    Delete Team
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
