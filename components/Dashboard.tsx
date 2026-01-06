@@ -380,18 +380,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           {/* Row 1 */}
           <Card title="Distribuzione per Stato" className="h-full min-h-0 flex flex-col overflow-hidden">
         {stats.total === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-400">
+          <div className="h-full flex items-center justify-center text-slate-400 text-xs">
             Nessun obiettivo
           </div>
         ) : (
           <div className="h-full flex flex-col">
-            <div className="flex-1 relative min-h-[120px]">
+            <div className="flex-1 relative min-h-[80px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={statusDistribution}
-                    innerRadius={40}
-                    outerRadius={55}
+                    innerRadius={30}
+                    outerRadius={42}
                     paddingAngle={2}
                     dataKey="value"
                     stroke="none"
@@ -403,15 +403,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">Totale</p>
+                <p className="text-base font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500">Totale</p>
               </div>
             </div>
-            <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-slate-700">
+            <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-slate-700">
               {statusDistribution.map((status) => (
-                <div key={status.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+                <div key={status.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.color }} />
                     <span className="text-slate-600 dark:text-slate-400">{status.name}</span>
                   </div>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">{status.value}</span>
@@ -424,28 +424,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* Scadenze Imminenti - Row 1 */}
           <Card title="Scadenze Imminenti" className="h-full min-h-0 flex flex-col overflow-hidden" action={
-        <span className="text-xs text-slate-400">Prossimi 14 giorni</span>
+        <span className="text-[10px] text-slate-400">14 giorni</span>
       }>
         {upcomingDeadlines.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-            Nessuna scadenza imminente
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
+            Nessuna scadenza
           </div>
         ) : (
-          <div className="space-y-3 overflow-y-auto flex-1">
-            {upcomingDeadlines.slice(0, 3).map((obj) => {
+          <div className="space-y-1.5 overflow-y-auto flex-1">
+            {upcomingDeadlines.slice(0, 4).map((obj) => {
               const daysLeft = getDaysUntilDue(obj.dueDate);
               const isUrgent = daysLeft <= 3;
 
               return (
-                <div key={obj.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
-                  <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-                    <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                <div key={obj.id} className="flex items-center gap-2 p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                  <div className={`p-1.5 rounded ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                    <Calendar className={`w-3 h-3 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(obj.dueDate)}</p>
+                    <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatDate(obj.dueDate)}</p>
                   </div>
-                  <div className={`text-xs font-medium px-2 py-1 rounded-lg ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                  <div className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
                     }`}>
                     {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
                   </div>
@@ -458,18 +458,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* Obiettivi per Livello - Row 2 */}
           <Card title="Obiettivi per Livello" className="h-full min-h-0 flex flex-col overflow-hidden">
-        <div className="space-y-3 flex-1 overflow-y-auto">
+        <div className="space-y-2 flex-1 overflow-y-auto">
           {levelDistribution.map((level) => (
-            <div key={level.name} className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${level.color}`}>
-                <level.icon className="w-4 h-4" />
+            <div key={level.name} className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${level.color}`}>
+                <level.icon className="w-3 h-3" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{level.name}</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">{level.value}</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-400">{level.name}</span>
+                  <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">{level.value}</span>
                 </div>
-                <div className="mt-1">
+                <div className="mt-0.5">
                   <ProgressBar
                     value={stats.total > 0 ? (level.value / stats.total) * 100 : 0}
                     height="h-1"
@@ -484,35 +484,35 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* OKR sotto monitoraggio - Row 2 */}
           <Card title="OKR sotto monitoraggio" className="h-full min-h-0 flex flex-col overflow-hidden" action={
-        <span className="text-xs text-orange-500 font-medium">
+        <span className="text-[10px] text-orange-500 font-medium">
           {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
         </span>
       }>
         {needsAttention.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm">
-            <CheckCircle2 className="w-8 h-8 mb-2 text-green-400" />
-            Tutti gli OKR sono in linea
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-xs">
+            <CheckCircle2 className="w-6 h-6 mb-1.5 text-green-400" />
+            Tutto in linea
           </div>
         ) : (
-          <div className="space-y-2 overflow-y-auto flex-1">
-            {needsAttention.slice(0, 3).map((obj) => {
+          <div className="space-y-1.5 overflow-y-auto flex-1">
+            {needsAttention.slice(0, 4).map((obj) => {
               const metrics = obj.healthMetrics!;
               const riskConfig = riskLevelConfig[metrics.riskLevel];
               const RiskIcon = riskConfig.icon;
 
               return (
-                <div key={obj.id} className="p-2 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
-                      <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
+                <div key={obj.id} className="p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded ${riskConfig.bgColor}`}>
+                      <RiskIcon className={`w-3 h-3 ${riskConfig.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
+                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${riskConfig.bgColor} ${riskConfig.color}`}>
                           {riskConfig.label}
                         </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{obj.progress}%</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{obj.progress}%</span>
                       </div>
                     </div>
                   </div>
@@ -528,75 +528,55 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <div className="flex flex-col min-h-0 overflow-hidden">
           <Card title="Aggiornati di Recente" className="h-full min-h-0 flex flex-col overflow-hidden">
             {recentlyUpdated.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">
+              <div className="py-4 text-center text-slate-400 text-xs">
                 Nessun obiettivo
               </div>
             ) : (
-              <div className="space-y-4 flex-1 overflow-y-auto">
+              <div className="space-y-2 flex-1 overflow-y-auto">
             {recentlyUpdated.map((obj) => (
               <UITooltip
                 key={obj.id}
                 position="left"
                 content={
-                  <div className="space-y-1 min-w-[200px]">
-                    <p className="font-medium">{obj.title}</p>
-                    <div className="text-[10px] text-gray-300 space-y-1">
-                      <p>👤 Responsabile: {obj.ownerName || 'Non assegnato'}</p>
-                      <p>📅 Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
-                      <p>🎯 Key Results: {obj.keyResults.length}</p>
-                      {obj.keyResults.length > 0 && (
-                        <>
-                          <hr className="border-gray-600 my-1" />
-                          {obj.keyResults.slice(0, 3).map((kr, idx) => (
-                            <p key={kr.id} className="truncate">
-                              {idx + 1}. {kr.description} ({Math.round(((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100)}%)
-                            </p>
-                          ))}
-                          {obj.keyResults.length > 3 && (
-                            <p className="text-slate-400">...e altri {obj.keyResults.length - 3}</p>
-                          )}
-                        </>
-                      )}
-                      <hr className="border-gray-600 my-1" />
-                      <p>🕐 Aggiornato: {obj.updatedAt ? new Date(obj.updatedAt).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                  <div className="space-y-1 min-w-[180px]">
+                    <p className="font-medium text-xs">{obj.title}</p>
+                    <div className="text-[9px] text-gray-300 space-y-0.5">
+                      <p>Responsabile: {obj.ownerName || 'Non assegnato'}</p>
+                      <p>Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
+                      <p>Key Results: {obj.keyResults.length}</p>
                     </div>
                   </div>
                 }
               >
                 <div className="group cursor-help">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-xl ${obj.status === 'completed' ? 'bg-green-100' :
+                  <div className="flex items-start gap-2">
+                    <div className={`p-1.5 rounded-lg ${obj.status === 'completed' ? 'bg-green-100' :
                       obj.status === 'at-risk' ? 'bg-orange-100' :
                         obj.status === 'off-track' ? 'bg-red-100' :
                           'bg-blue-100'
                       }`}>
-                      <Target className={`w-4 h-4 ${obj.status === 'completed' ? 'text-green-600' :
+                      <Target className={`w-3 h-3 ${obj.status === 'completed' ? 'text-green-600' :
                         obj.status === 'at-risk' ? 'text-orange-600' :
                           obj.status === 'off-track' ? 'text-red-600' :
                             'text-blue-600'
                         }`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
+                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
                           {statusLabels[obj.status] || obj.status}
                         </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{obj.period}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{obj.period}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
                     </div>
                   </div>
-                  <div className="mt-2 ml-11">
-                    <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
+                  <div className="mt-1 ml-8">
+                    <ProgressBar value={obj.progress} height="h-1" color={getProgressColor(obj.progress)} />
                   </div>
-                  {obj.keyResults.length > 0 && (
-                    <div className="mt-2 ml-11 text-xs text-slate-400 dark:text-slate-500">
-                      {obj.keyResults.length} Key Results
-                    </div>
-                  )}
                 </div>
               </UITooltip>
                 ))}
@@ -608,12 +588,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
       {/* Empty State */}
       {stats.total === 0 && (
-        <Card className="text-center py-12 flex-shrink-0">
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+        <Card className="text-center py-8 flex-shrink-0">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Nessun obiettivo ancora</h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">Inizia creando il tuo primo OKR per tracciare i progressi</p>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Nessun obiettivo</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Crea il tuo primo OKR</p>
         </Card>
       )}
     </div>
