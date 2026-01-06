@@ -245,22 +245,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-hidden">
+    <div className="h-full flex flex-col gap-3 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {currentUser.role === 'admin' ? 'Panoramica aziendale' : `Benvenuto, ${currentUser.name}`}
           </p>
         </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50">
+        <span className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50">
           {stats.total} Obiettivi attivi
         </span>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
     <UITooltip
       content={
         <div className="space-y-1">
@@ -273,15 +273,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Obiettivi Totali</p>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{stats.draft} in bozza</p>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Obiettivi Totali</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</h3>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">{stats.draft} in bozza</p>
           </div>
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl">
-            <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+            <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </Card>
@@ -299,15 +299,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
         <div className="flex items-start justify-between h-full">
-          <div className="flex flex-col justify-between h-full flex-1 mr-3">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Progresso Medio</p>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.avgProgress}%</h3>
-            <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
+          <div className="flex flex-col justify-between h-full flex-1 mr-2">
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Progresso Medio</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.avgProgress}%</h3>
+            <ProgressBar value={stats.avgProgress} height="h-1" color={getProgressColor(stats.avgProgress)} />
           </div>
-          <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-2xl">
-            <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
+            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
           </div>
         </div>
       </Card>
@@ -323,24 +323,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
           </p>
           {paceStats.avgPaceRatio < 0.8 && (
             <p className="text-yellow-300 text-[10px]">
-              ⚠️ Il team è in ritardo rispetto alla pianificazione
+              Il team è in ritardo rispetto alla pianificazione
             </p>
           )}
         </div>
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Ritmo Medio</p>
-            <h3 className={`text-3xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Ritmo Medio</p>
+            <h3 className={`text-2xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
               {Math.round(paceStats.avgPaceRatio * 100)}%
             </h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
           </div>
-          <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl">
-            <Gauge className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <Gauge className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           </div>
         </div>
       </Card>
@@ -358,15 +358,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[120px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Completati</p>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.completed}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Completati</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.completed}</h3>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
           </div>
-          <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-2xl">
-            <CheckCircle2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+            <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </div>
         </div>
       </Card>
@@ -374,9 +374,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   </div>
 
       {/* Main Content Grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-hidden">
         {/* First two columns - 2x2 grid */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-hidden">
           {/* Row 1 */}
           <Card title="Distribuzione per Stato" className="h-full min-h-0 flex flex-col overflow-hidden">
         {stats.total === 0 ? (

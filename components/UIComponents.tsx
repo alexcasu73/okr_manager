@@ -11,15 +11,15 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white dark:bg-slate-800/90 rounded-3xl p-5 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
+      className={`bg-white dark:bg-slate-800/90 rounded-xl p-3.5 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
     >
       {(title || action) && (
-        <div className="flex justify-between items-center mb-4 flex-shrink-0">
-          {title && <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h3>}
+        <div className="flex justify-between items-center mb-2.5 flex-shrink-0">
+          {title && <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{title}</h3>}
           {action && <div>{action}</div>}
         </div>
       )}
@@ -42,7 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900";
+  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900";
 
   const variants = {
     primary: "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white focus:ring-slate-900 dark:focus:ring-slate-400",
@@ -53,9 +53,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-6 py-3 text-base"
+    sm: "px-2.5 py-1 text-xs",
+    md: "px-3.5 py-1.5 text-sm",
+    lg: "px-5 py-2 text-sm"
   };
 
   return (
@@ -63,7 +63,7 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
-      {icon && <span className="mr-2">{icon}</span>}
+      {icon && <span className="mr-1.5">{icon}</span>}
       {children}
     </button>
   );
@@ -85,7 +85,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, color = 'gray', classNam
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium ${colors[color]} ${className}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[color]} ${className}`}>
       {children}
     </span>
   );
