@@ -295,34 +295,34 @@ const TeamPage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-3 overflow-hidden">
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
       {/* Pending Invitations Banner */}
       {pendingInvitations.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex-shrink-0">
-          <h3 className="font-semibold text-xs text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-1.5">
-            <Mail className="w-3.5 h-3.5" />
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex-shrink-0">
+          <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2">
+            <Mail className="w-4 h-4" />
             Inviti in sospeso
           </h3>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {pendingInvitations.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between bg-white dark:bg-slate-700 rounded-lg p-2">
+              <div key={inv.id} className="flex items-center justify-between bg-white dark:bg-slate-700 rounded-xl p-3">
                 <div>
-                  <p className="font-medium text-xs text-slate-900 dark:text-slate-100">{inv.teamName}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Invitato da {inv.invitedByName}</p>
+                  <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{inv.teamName}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Invitato da {inv.invitedByName}</p>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleAcceptInvitation(inv.inviteLink?.split('/').pop() || '')}
-                    className="flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-[10px] hover:bg-green-700"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs hover:bg-green-700"
                   >
-                    <CheckCircle className="w-3 h-3" />
+                    <CheckCircle className="w-3.5 h-3.5" />
                     Accetta
                   </button>
                   <button
                     onClick={() => handleDeclineInvitation(inv.inviteLink?.split('/').pop() || '')}
-                    className="flex items-center gap-1 px-2 py-1 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 rounded text-[10px] hover:bg-slate-300 dark:hover:bg-slate-500"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs hover:bg-slate-300 dark:hover:bg-slate-500"
                   >
-                    <XCircle className="w-3 h-3" />
+                    <XCircle className="w-3.5 h-3.5" />
                     Rifiuta
                   </button>
                 </div>
@@ -334,11 +334,11 @@ const TeamPage: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-2.5 flex items-center gap-2 flex-shrink-0">
-          <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
-          <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-3 flex-shrink-0">
+          <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           <button onClick={() => setError(null)} className="ml-auto">
-            <X className="w-4 h-4 text-red-400 hover:text-red-600 dark:hover:text-red-300" />
+            <X className="w-5 h-5 text-red-400 hover:text-red-600 dark:hover:text-red-300" />
           </button>
         </div>
       )}
@@ -346,51 +346,51 @@ const TeamPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">Team</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Gestisci membri e inviti</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Team</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestisci membri e inviti</p>
         </div>
         <button
           onClick={() => setIsCreateTeamModalOpen(true)}
-          className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-4 h-4" />
           Nuovo Team
         </button>
       </div>
 
       {teams.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 text-center shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
-            <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Nessun team</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Crea il tuo primo team</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-10 text-center shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
+            <Users className="w-14 h-14 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">Nessun team</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Crea il tuo primo team</p>
             <button
               onClick={() => setIsCreateTeamModalOpen(true)}
-              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-xs"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               Nuovo Team
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-3 overflow-hidden">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
           {/* Team Selector */}
           <div className="lg:col-span-1 min-h-0 overflow-hidden">
-            <div className="h-full bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex flex-col">
-              <h3 className="font-semibold text-xs text-slate-900 dark:text-slate-100 mb-2">I tuoi Team</h3>
-              <div className="flex-1 overflow-y-auto space-y-1">
+            <div className="h-full bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex flex-col">
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3">I tuoi Team</h3>
+              <div className="flex-1 overflow-y-auto space-y-2">
                 {teams.map((team) => (
                   <button
                     key={team.id}
                     onClick={() => setSelectedTeam(team)}
-                    className={`w-full text-left p-2 rounded-lg transition-colors ${selectedTeam?.id === team.id
+                    className={`w-full text-left p-3 rounded-xl transition-colors ${selectedTeam?.id === team.id
                       ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-700 border border-transparent'
                       }`}
                   >
-                    <p className="font-medium text-xs text-slate-900 dark:text-slate-100">{team.name}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{team.memberCount} membri</p>
+                    <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{team.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{team.memberCount} membri</p>
                   </button>
                 ))}
               </div>
@@ -398,16 +398,16 @@ const TeamPage: React.FC = () => {
           </div>
 
           {/* Team Details */}
-          <div className="lg:col-span-3 min-h-0 overflow-hidden flex flex-col gap-3">
+          <div className="lg:col-span-3 min-h-0 overflow-hidden flex flex-col gap-4">
             {selectedTeam && (
               <>
                 {/* Team Header */}
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex-shrink-0">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedTeam.name}</h2>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">{selectedTeam.name}</h2>
                       {selectedTeam.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{selectedTeam.description}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedTeam.description}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -415,27 +415,27 @@ const TeamPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => setIsInviteModalOpen(true)}
-                            className="flex items-center gap-1 bg-blue-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-xs"
+                            className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-4 h-4" />
                             Aggiungi
                           </button>
                           <button
                             onClick={() => openEditModal(selectedTeam)}
-                            className="flex items-center gap-1 bg-slate-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-xs"
+                            className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-2 rounded-xl hover:bg-slate-700 transition-colors text-sm"
                             title="Modifica team"
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <Edit className="w-4 h-4" />
                           </button>
                         </>
                       )}
                       {currentUserRole === 'owner' && (
                         <button
                           onClick={() => openDeleteConfirmation(selectedTeam)}
-                          className="flex items-center gap-1 bg-red-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-xs"
+                          className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm"
                           title="Elimina team"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -443,48 +443,48 @@ const TeamPage: React.FC = () => {
                 </div>
 
                 {/* Members List */}
-                <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex flex-col overflow-hidden">
-                  <h3 className="font-semibold text-xs text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-1.5 flex-shrink-0">
-                    <Users className="w-3.5 h-3.5" />
+                <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex flex-col overflow-hidden">
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2 flex-shrink-0">
+                    <Users className="w-4 h-4" />
                     Membri ({members.length})
                   </h3>
-                  <div className="flex-1 overflow-y-auto space-y-1.5">
+                  <div className="flex-1 overflow-y-auto space-y-2">
                     {members.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-xl"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <img
                             src={member.avatar}
                             alt={member.name}
-                            className="w-8 h-8 rounded-full"
+                            className="w-10 h-10 rounded-full"
                           />
                           <div>
-                            <p className="font-medium text-xs text-slate-900 dark:text-slate-100">{member.name}</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400">{member.email}</p>
+                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{member.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{member.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${getRoleBadgeColor(member.role)}`}>
-                            <span className="[&>svg]:w-3 [&>svg]:h-3">{getRoleIcon(member.role)}</span>
+                        <div className="flex items-center gap-3">
+                          <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
+                            <span className="[&>svg]:w-3.5 [&>svg]:h-3.5">{getRoleIcon(member.role)}</span>
                             {member.role}
                           </span>
                           {canManageTeam && member.role !== 'owner' && (
                             <div className="relative">
                               <button
                                 onClick={() => setActionMenuOpen(actionMenuOpen === member.id ? null : member.id)}
-                                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"
+                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg"
                               >
-                                <MoreVertical className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                <MoreVertical className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                               </button>
                               {actionMenuOpen === member.id && (
-                                <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-10">
+                                <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-10">
                                   <button
                                     onClick={() => handleRemoveMember(member.id)}
-                                    className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-xs"
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm"
                                   >
-                                    <UserMinus className="w-3 h-3" />
+                                    <UserMinus className="w-4 h-4" />
                                     Rimuovi
                                   </button>
                                 </div>
@@ -499,45 +499,45 @@ const TeamPage: React.FC = () => {
 
                 {/* Pending Invitations */}
                 {canManageTeam && invitations.length > 0 && (
-                  <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex-shrink-0 max-h-[200px] overflow-y-auto">
-                    <h3 className="font-semibold text-xs text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
+                  <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex-shrink-0 max-h-[220px] overflow-y-auto">
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
                       Inviti in attesa ({invitations.length})
                     </h3>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {invitations.map((invitation) => (
                         <div
                           key={invitation.id}
-                          className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-100 dark:border-yellow-800"
+                          className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-800"
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center">
-                              <Mail className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center">
+                              <Mail className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                             </div>
                             <div>
-                              <p className="font-medium text-xs text-slate-900 dark:text-slate-100">{invitation.email}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                              <p className="font-medium text-sm text-slate-900 dark:text-slate-100">{invitation.email}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {invitation.role} - da {invitation.invitedByName}
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <button
                               onClick={() => handleResendInvitation(invitation.id)}
                               disabled={resendingId === invitation.id}
-                              className="flex items-center gap-1 px-2 py-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded text-[10px] disabled:opacity-50"
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg text-xs disabled:opacity-50"
                             >
                               {resendingId === invitation.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
-                                <RefreshCw className="w-3 h-3" />
+                                <RefreshCw className="w-3.5 h-3.5" />
                               )}
                             </button>
                             <button
                               onClick={() => handleCancelInvitation(invitation.id)}
-                              className="flex items-center gap-1 px-2 py-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-[10px]"
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-xs"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -579,24 +579,24 @@ const TeamPage: React.FC = () => {
       {isDeleteModalOpen && teamToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => !isDeleting && setIsDeleteModalOpen(false)} />
-          <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-none dark:ring-1 dark:ring-slate-700 w-full max-w-sm mx-4 p-4">
+          <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-none dark:ring-1 dark:ring-slate-700 w-full max-w-sm mx-4 p-5">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-red-600" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-red-100 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Eliminare Team?</h2>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">Azione irreversibile</p>
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Eliminare Team?</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Azione irreversibile</p>
               </div>
             </div>
 
             {/* Content */}
-            <div className="mb-4">
-              <p className="text-xs text-slate-700 dark:text-slate-300 mb-2">
+            <div className="mb-5">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
                 Eliminare <strong>{teamToDelete.name}</strong>?
               </p>
-              <ul className="list-disc list-inside text-[10px] text-slate-600 dark:text-slate-400 space-y-0.5">
+              <ul className="list-disc list-inside text-xs text-slate-600 dark:text-slate-400 space-y-1">
                 <li>{teamToDelete.memberCount} membri</li>
                 <li>Tutti gli inviti</li>
                 <li>Tutti i dati</li>
@@ -604,11 +604,11 @@ const TeamPage: React.FC = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-xs"
+                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm"
                 disabled={isDeleting}
               >
                 Annulla
@@ -616,16 +616,16 @@ const TeamPage: React.FC = () => {
               <button
                 onClick={handleDeleteTeam}
                 disabled={isDeleting}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-xs"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Eliminazione...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                     Elimina
                   </>
                 )}

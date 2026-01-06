@@ -117,8 +117,8 @@ const AppContent: React.FC = () => {
     <div className="flex h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 overflow-hidden">
       <Sidebar currentView={currentView} onChangeView={setCurrentView} />
 
-      <main className="flex-1 lg:ml-56 flex flex-col h-full overflow-hidden">
-        <div className="flex-1 p-3 lg:p-5 overflow-y-auto">
+      <main className="flex-1 lg:ml-64 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <Header onSelectOKR={(id) => setSelectedOKRId(id)} />
             {renderContent()}

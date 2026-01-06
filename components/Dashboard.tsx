@@ -245,43 +245,43 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-3 overflow-hidden">
+    <div className="h-full flex flex-col gap-5 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {currentUser.role === 'admin' ? 'Panoramica aziendale' : `Benvenuto, ${currentUser.name}`}
           </p>
         </div>
-        <span className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50">
+        <span className="text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-4 py-2 rounded-xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50">
           {stats.total} Obiettivi attivi
         </span>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
     <UITooltip
       content={
         <div className="space-y-1">
           <p className="font-medium">Obiettivi Totali</p>
           <p>Numero totale di OKR in tutti gli stati.</p>
-          <p className="text-gray-300 text-[10px] mt-1">
+          <p className="text-gray-300 text-xs mt-1">
             In linea: {stats.onTrack} | A rischio: {stats.atRisk} | Completati: {stats.completed}
           </p>
         </div>
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[100px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Obiettivi Totali</p>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</h3>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">{stats.draft} in bozza</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Obiettivi Totali</p>
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{stats.draft} in bozza</p>
           </div>
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-            <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+            <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </Card>
@@ -292,22 +292,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <div className="space-y-1">
           <p className="font-medium">Progresso Medio</p>
           <p>Media ponderata del progresso di tutti gli OKR attivi.</p>
-          <p className="text-gray-300 text-[10px] mt-1">
+          <p className="text-gray-300 text-xs mt-1">
             Basato su {stats.total - stats.draft} obiettivi attivi
           </p>
         </div>
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[100px]">
         <div className="flex items-start justify-between h-full">
-          <div className="flex flex-col justify-between h-full flex-1 mr-2">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Progresso Medio</p>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.avgProgress}%</h3>
-            <ProgressBar value={stats.avgProgress} height="h-1" color={getProgressColor(stats.avgProgress)} />
+          <div className="flex flex-col justify-between h-full flex-1 mr-3">
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Progresso Medio</p>
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.avgProgress}%</h3>
+            <ProgressBar value={stats.avgProgress} height="h-1.5" color={getProgressColor(stats.avgProgress)} />
           </div>
-          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+          <div className="p-2.5 bg-green-100 dark:bg-green-900/30 rounded-xl">
+            <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
           </div>
         </div>
       </Card>
@@ -318,11 +318,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <div className="space-y-1">
           <p className="font-medium">Ritmo Medio</p>
           <p>Rapporto tra progresso attuale e progresso atteso in base al tempo.</p>
-          <p className="text-gray-300 text-[10px] mt-1">
+          <p className="text-gray-300 text-xs mt-1">
             100% = perfettamente in linea | &lt;80% = in ritardo
           </p>
           {paceStats.avgPaceRatio < 0.8 && (
-            <p className="text-yellow-300 text-[10px]">
+            <p className="text-yellow-300 text-xs">
               Il team è in ritardo rispetto alla pianificazione
             </p>
           )}
@@ -330,17 +330,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[100px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Ritmo Medio</p>
-            <h3 className={`text-2xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Ritmo Medio</p>
+            <h3 className={`text-3xl font-bold ${getPaceColor(paceStats.avgPaceRatio)}`}>
               {Math.round(paceStats.avgPaceRatio * 100)}%
             </h3>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{paceStats.onPaceCount} in linea, {paceStats.behindCount} in ritardo</p>
           </div>
-          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-            <Gauge className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <div className="p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <Gauge className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           </div>
         </div>
       </Card>
@@ -351,22 +351,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <div className="space-y-1">
           <p className="font-medium">Completati</p>
           <p>OKR che hanno raggiunto il 100% di progresso.</p>
-          <p className="text-gray-300 text-[10px] mt-1">
+          <p className="text-gray-300 text-xs mt-1">
             Tasso di completamento: {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
           </p>
         </div>
       }
       position="bottom"
     >
-      <Card className="relative overflow-hidden cursor-help w-full min-h-[90px]">
+      <Card className="relative overflow-hidden cursor-help w-full min-h-[100px]">
         <div className="flex items-start justify-between h-full">
           <div className="flex flex-col justify-between h-full">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Completati</p>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.completed}</h3>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Completati</p>
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stats.completed}</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% del totale</p>
           </div>
-          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-            <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="p-2.5 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+            <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
         </div>
       </Card>
@@ -374,24 +374,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   </div>
 
       {/* Main Content Grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
         {/* First two columns - 2x2 grid */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-hidden">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
           {/* Row 1 */}
           <Card title="Distribuzione per Stato" className="h-full min-h-0 flex flex-col overflow-hidden">
         {stats.total === 0 ? (
-          <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+          <div className="h-full flex items-center justify-center text-slate-400 text-sm">
             Nessun obiettivo
           </div>
         ) : (
           <div className="h-full flex flex-col">
-            <div className="flex-1 relative min-h-[80px]">
+            <div className="flex-1 relative min-h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={statusDistribution}
-                    innerRadius={30}
-                    outerRadius={42}
+                    innerRadius={38}
+                    outerRadius={52}
                     paddingAngle={2}
                     dataKey="value"
                     stroke="none"
@@ -403,15 +403,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                <p className="text-base font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
-                <p className="text-[9px] text-slate-400 dark:text-slate-500">Totale</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Totale</p>
               </div>
             </div>
-            <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-slate-700">
+            <div className="space-y-1.5 pt-3 border-t border-gray-100 dark:border-slate-700">
               {statusDistribution.map((status) => (
-                <div key={status.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.color }} />
+                <div key={status.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: status.color }} />
                     <span className="text-slate-600 dark:text-slate-400">{status.name}</span>
                   </div>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">{status.value}</span>
@@ -424,28 +424,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* Scadenze Imminenti - Row 1 */}
           <Card title="Scadenze Imminenti" className="h-full min-h-0 flex flex-col overflow-hidden" action={
-        <span className="text-[10px] text-slate-400">14 giorni</span>
+        <span className="text-xs text-slate-400">14 giorni</span>
       }>
         {upcomingDeadlines.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-xs">
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
             Nessuna scadenza
           </div>
         ) : (
-          <div className="space-y-1.5 overflow-y-auto flex-1">
+          <div className="space-y-2 overflow-y-auto flex-1">
             {upcomingDeadlines.slice(0, 4).map((obj) => {
               const daysLeft = getDaysUntilDue(obj.dueDate);
               const isUrgent = daysLeft <= 3;
 
               return (
-                <div key={obj.id} className="flex items-center gap-2 p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                  <div className={`p-1.5 rounded ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-                    <Calendar className={`w-3 h-3 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                <div key={obj.id} className="flex items-center gap-3 p-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                  <div className={`p-2 rounded-lg ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                    <Calendar className={`w-4 h-4 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{formatDate(obj.dueDate)}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{formatDate(obj.dueDate)}</p>
                   </div>
-                  <div className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                  <div className={`text-xs font-medium px-2 py-1 rounded-lg ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
                     }`}>
                     {daysLeft === 0 ? 'Oggi' : daysLeft === 1 ? 'Domani' : `${daysLeft}g`}
                   </div>
@@ -458,21 +458,21 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* Obiettivi per Livello - Row 2 */}
           <Card title="Obiettivi per Livello" className="h-full min-h-0 flex flex-col overflow-hidden">
-        <div className="space-y-2 flex-1 overflow-y-auto">
+        <div className="space-y-3 flex-1 overflow-y-auto">
           {levelDistribution.map((level) => (
-            <div key={level.name} className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${level.color}`}>
-                <level.icon className="w-3 h-3" />
+            <div key={level.name} className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${level.color}`}>
+                <level.icon className="w-4 h-4" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-600 dark:text-slate-400">{level.name}</span>
-                  <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">{level.value}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">{level.name}</span>
+                  <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">{level.value}</span>
                 </div>
-                <div className="mt-0.5">
+                <div className="mt-1">
                   <ProgressBar
                     value={stats.total > 0 ? (level.value / stats.total) * 100 : 0}
-                    height="h-1"
+                    height="h-1.5"
                     color="bg-gray-300"
                   />
                 </div>
@@ -484,35 +484,35 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
           {/* OKR sotto monitoraggio - Row 2 */}
           <Card title="OKR sotto monitoraggio" className="h-full min-h-0 flex flex-col overflow-hidden" action={
-        <span className="text-[10px] text-orange-500 font-medium">
+        <span className="text-xs text-orange-500 font-medium">
           {needsAttention.length > 0 ? `${needsAttention.length} da verificare` : ''}
         </span>
       }>
         {needsAttention.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-xs">
-            <CheckCircle2 className="w-6 h-6 mb-1.5 text-green-400" />
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm">
+            <CheckCircle2 className="w-8 h-8 mb-2 text-green-400" />
             Tutto in linea
           </div>
         ) : (
-          <div className="space-y-1.5 overflow-y-auto flex-1">
+          <div className="space-y-2 overflow-y-auto flex-1">
             {needsAttention.slice(0, 4).map((obj) => {
               const metrics = obj.healthMetrics!;
               const riskConfig = riskLevelConfig[metrics.riskLevel];
               const RiskIcon = riskConfig.icon;
 
               return (
-                <div key={obj.id} className="p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded ${riskConfig.bgColor}`}>
-                      <RiskIcon className={`w-3 h-3 ${riskConfig.color}`} />
+                <div key={obj.id} className="p-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${riskConfig.bgColor}`}>
+                      <RiskIcon className={`w-4 h-4 ${riskConfig.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${riskConfig.bgColor} ${riskConfig.color}`}>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-lg ${riskConfig.bgColor} ${riskConfig.color}`}>
                           {riskConfig.label}
                         </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{obj.progress}%</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{obj.progress}%</span>
                       </div>
                     </div>
                   </div>
@@ -528,19 +528,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <div className="flex flex-col min-h-0 overflow-hidden">
           <Card title="Aggiornati di Recente" className="h-full min-h-0 flex flex-col overflow-hidden">
             {recentlyUpdated.length === 0 ? (
-              <div className="py-4 text-center text-slate-400 text-xs">
+              <div className="py-6 text-center text-slate-400 text-sm">
                 Nessun obiettivo
               </div>
             ) : (
-              <div className="space-y-2 flex-1 overflow-y-auto">
+              <div className="space-y-3 flex-1 overflow-y-auto">
             {recentlyUpdated.map((obj) => (
               <UITooltip
                 key={obj.id}
                 position="left"
                 content={
-                  <div className="space-y-1 min-w-[180px]">
-                    <p className="font-medium text-xs">{obj.title}</p>
-                    <div className="text-[9px] text-gray-300 space-y-0.5">
+                  <div className="space-y-1 min-w-[200px]">
+                    <p className="font-medium text-sm">{obj.title}</p>
+                    <div className="text-xs text-gray-300 space-y-0.5">
                       <p>Responsabile: {obj.ownerName || 'Non assegnato'}</p>
                       <p>Scadenza: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString('it-IT') : 'Non definita'}</p>
                       <p>Key Results: {obj.keyResults.length}</p>
@@ -549,33 +549,33 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                 }
               >
                 <div className="group cursor-help">
-                  <div className="flex items-start gap-2">
-                    <div className={`p-1.5 rounded-lg ${obj.status === 'completed' ? 'bg-green-100' :
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-xl ${obj.status === 'completed' ? 'bg-green-100' :
                       obj.status === 'at-risk' ? 'bg-orange-100' :
                         obj.status === 'off-track' ? 'bg-red-100' :
                           'bg-blue-100'
                       }`}>
-                      <Target className={`w-3 h-3 ${obj.status === 'completed' ? 'text-green-600' :
+                      <Target className={`w-4 h-4 ${obj.status === 'completed' ? 'text-green-600' :
                         obj.status === 'at-risk' ? 'text-orange-600' :
                           obj.status === 'off-track' ? 'text-red-600' :
                             'text-blue-600'
                         }`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
                           {statusLabels[obj.status] || obj.status}
                         </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{obj.period}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{obj.period}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
+                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
                     </div>
                   </div>
-                  <div className="mt-1 ml-8">
-                    <ProgressBar value={obj.progress} height="h-1" color={getProgressColor(obj.progress)} />
+                  <div className="mt-2 ml-11">
+                    <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
                   </div>
                 </div>
               </UITooltip>
@@ -588,12 +588,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
       {/* Empty State */}
       {stats.total === 0 && (
-        <Card className="text-center py-8 flex-shrink-0">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <Card className="text-center py-10 flex-shrink-0">
+          <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Target className="w-7 h-7 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Nessun obiettivo</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Crea il tuo primo OKR</p>
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Nessun obiettivo</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Crea il tuo primo OKR</p>
         </Card>
       )}
     </div>

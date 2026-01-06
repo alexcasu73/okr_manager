@@ -11,14 +11,14 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white dark:bg-slate-800/90 rounded-xl p-3.5 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
+      className={`bg-white dark:bg-slate-800/90 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
     >
       {(title || action) && (
-        <div className="flex justify-between items-center mb-2.5 flex-shrink-0">
+        <div className="flex justify-between items-center mb-3 flex-shrink-0">
           {title && <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{title}</h3>}
           {action && <div>{action}</div>}
         </div>
@@ -53,9 +53,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizes = {
-    sm: "px-2.5 py-1 text-xs",
-    md: "px-3.5 py-1.5 text-sm",
-    lg: "px-5 py-2 text-sm"
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-4 py-2 text-sm",
+    lg: "px-5 py-2.5 text-sm"
   };
 
   return (
