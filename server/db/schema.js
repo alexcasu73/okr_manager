@@ -98,7 +98,31 @@ export async function initializeOKRSchema(pool) {
       )
     `);
 
-    // Indexes
+    // Objective contributors table (many-to-many relationship)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS objective_contributors (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        objective_id UUID NOT NULL REFERENCES objectives(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role VARCHAR(50) NOT NULL DEFAULT 'contributor' CHECK (role IN ('contributor', 'reviewer')),
+        added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(objective_id, user_id)
+      )
+    `);
+
+    // Approval history table for tracking approval workflow
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS approval_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        objective_id UUID NOT NULL REFERENCES objectives(id) ON DELETE CASCADE,
+        action VARCHAR(50) NOT NULL CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated')),
+        performed_by UUID NOT NULL REFERENCES users(id),
+        comment TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+
+    // Basic indexes (on columns that always exist)
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_objectives_owner ON objectives(owner_id);
       CREATE INDEX IF NOT EXISTS idx_objectives_level ON objectives(level);
@@ -109,14 +133,93 @@ export async function initializeOKRSchema(pool) {
       CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
       CREATE INDEX IF NOT EXISTS idx_team_invitations_email ON team_invitations(email);
       CREATE INDEX IF NOT EXISTS idx_team_invitations_token ON team_invitations(token);
+      CREATE INDEX IF NOT EXISTS idx_objective_contributors_objective ON objective_contributors(objective_id);
+      CREATE INDEX IF NOT EXISTS idx_objective_contributors_user ON objective_contributors(user_id);
+      CREATE INDEX IF NOT EXISTS idx_approval_history_objective ON approval_history(objective_id);
     `);
 
     await client.query('COMMIT');
     console.log('OKR schema initialized successfully');
+
+    // Run migrations for existing databases (adds new columns)
+    await migrateHierarchyFields(pool);
+
+    // Create indexes on migrated columns (safe to run after migration)
+    await createHierarchyIndexes(pool);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
+  }
+}
+
+/**
+ * Migration: Add hierarchy and approval fields to existing tables
+ * Safe to run multiple times (checks if columns exist)
+ */
+async function migrateHierarchyFields(pool) {
+  const client = await pool.connect();
+
+  try {
+    // Check and add columns to objectives table
+    const objectiveColumns = [
+      { name: 'parent_objective_id', type: 'UUID REFERENCES objectives(id) ON DELETE SET NULL' },
+      { name: 'team_id', type: 'UUID REFERENCES teams(id) ON DELETE SET NULL' },
+      { name: 'approval_status', type: "VARCHAR(50) DEFAULT 'draft' CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active'))" },
+      { name: 'approved_by', type: 'UUID REFERENCES users(id)' },
+      { name: 'approved_at', type: 'TIMESTAMP WITH TIME ZONE' }
+    ];
+
+    for (const col of objectiveColumns) {
+      const checkResult = await client.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'objectives' AND column_name = $1
+      `, [col.name]);
+
+      if (checkResult.rows.length === 0) {
+        await client.query(`ALTER TABLE objectives ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`Added column objectives.${col.name}`);
+      }
+    }
+
+    // Check and add type column to teams table
+    const teamTypeCheck = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'teams' AND column_name = 'type'
+    `);
+
+    if (teamTypeCheck.rows.length === 0) {
+      await client.query(`
+        ALTER TABLE teams ADD COLUMN type VARCHAR(50) DEFAULT 'team'
+        CHECK (type IN ('department', 'team'))
+      `);
+      console.log('Added column teams.type');
+    }
+
+    console.log('Hierarchy migration completed');
+  } catch (error) {
+    console.error('Migration error:', error.message);
+    // Non-fatal: migrations may fail on constraints if data exists
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Create indexes on hierarchy columns (run after migration)
+ */
+async function createHierarchyIndexes(pool) {
+  try {
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_objectives_parent ON objectives(parent_objective_id);
+      CREATE INDEX IF NOT EXISTS idx_objectives_team ON objectives(team_id);
+      CREATE INDEX IF NOT EXISTS idx_objectives_approval ON objectives(approval_status);
+      CREATE INDEX IF NOT EXISTS idx_teams_type ON teams(type);
+    `);
+    console.log('Hierarchy indexes created');
+  } catch (error) {
+    console.error('Index creation error:', error.message);
+    // Non-fatal: indexes may already exist or columns may not exist
   }
 }

@@ -176,13 +176,16 @@ export interface KeyResult {
   confidence: 'high' | 'medium' | 'low';
 }
 
+export type OKRLevel = 'company' | 'department' | 'team' | 'individual';
+export type ApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'active';
+
 export interface Objective {
   id: string;
   title: string;
   description: string;
   ownerId: string;
   ownerName?: string;
-  level: 'company' | 'department' | 'team' | 'individual';
+  level: OKRLevel;
   period: string;
   status: 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft';
   progress: number;
@@ -191,6 +194,49 @@ export interface Objective {
   createdAt?: string;
   updatedAt?: string;
   healthMetrics?: HealthMetrics;
+  // Hierarchy fields
+  parentObjectiveId?: string | null;
+  parentObjectiveTitle?: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
+  childrenCount?: number;
+  children?: Objective[];
+  ancestors?: { id: string; title: string; level: OKRLevel }[];
+  // Approval workflow
+  approvalStatus?: ApprovalStatus;
+  approvedBy?: string | null;
+  approvedByName?: string | null;
+  approvedAt?: string | null;
+}
+
+export interface ParentObjective {
+  id: string;
+  title: string;
+  level: OKRLevel;
+  period: string;
+  status: string;
+  progress: number;
+  ownerName: string;
+}
+
+export interface ApprovalHistoryItem {
+  id: string;
+  objectiveId: string;
+  action: 'submitted' | 'approved' | 'rejected' | 'activated';
+  performedBy: string;
+  performedByName: string;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface Contributor {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  profilePicture?: string | null;
+  role: 'contributor' | 'reviewer' | 'supporter';
+  addedAt: string;
 }
 
 export interface ObjectiveFilters {
@@ -198,17 +244,22 @@ export interface ObjectiveFilters {
   period?: string;
   status?: string;
   mine?: boolean;
+  parentObjectiveId?: string;
+  approvalStatus?: ApprovalStatus;
 }
 
 export interface CreateObjectiveData {
   title: string;
   description?: string;
-  level: 'company' | 'department' | 'team' | 'individual';
+  level: OKRLevel;
   period: string;
   dueDate?: string;
   ownerId?: string;
   status?: 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft';
   keyResults?: Omit<KeyResult, 'id' | 'status' | 'confidence'>[];
+  // Hierarchy fields
+  parentObjectiveId?: string | null;
+  teamId?: string | null;
 }
 
 export interface UserBasic {
@@ -295,6 +346,108 @@ export const okrAPI = {
   // Get users for assignment
   async getUsers(): Promise<UserBasic[]> {
     return fetchAPI<UserBasic[]>('/users');
+  },
+
+  // === HIERARCHY ===
+
+  // Get full hierarchy tree
+  async getHierarchy(period?: string): Promise<Objective[]> {
+    const params = period ? `?period=${encodeURIComponent(period)}` : '';
+    return fetchAPI<Objective[]>(`/okr/hierarchy${params}`);
+  },
+
+  // Get available parent objectives for a given level
+  async getAvailableParents(level: OKRLevel, excludeId?: string): Promise<ParentObjective[]> {
+    const params = new URLSearchParams({ level });
+    if (excludeId) params.set('excludeId', excludeId);
+    return fetchAPI<ParentObjective[]>(`/okr/available-parents?${params}`);
+  },
+
+  // Get children of an objective
+  async getObjectiveChildren(objectiveId: string): Promise<Objective[]> {
+    return fetchAPI<Objective[]>(`/okr/objectives/${objectiveId}/children`);
+  },
+
+  // Get objective with ancestors (breadcrumb)
+  async getObjectiveWithAncestors(objectiveId: string): Promise<Objective & { ancestors: { id: string; title: string; level: OKRLevel }[] }> {
+    return fetchAPI(`/okr/objectives/${objectiveId}/ancestors`);
+  },
+
+  // === APPROVAL WORKFLOW ===
+
+  // Get objectives pending approval (for admins)
+  async getPendingApprovals(): Promise<Objective[]> {
+    return fetchAPI<Objective[]>('/okr/pending-approvals');
+  },
+
+  // Submit objective for review (owner action)
+  async submitForReview(objectiveId: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/submit-for-review`, {
+      method: 'POST',
+    });
+  },
+
+  // Approve objective (admin action)
+  async approveObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Reject objective (admin action)
+  async rejectObjective(objectiveId: string, comment: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Activate approved objective (owner/admin action)
+  async activateObjective(objectiveId: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/activate`, {
+      method: 'POST',
+    });
+  },
+
+  // Get approval history
+  async getApprovalHistory(objectiveId: string): Promise<ApprovalHistoryItem[]> {
+    return fetchAPI<ApprovalHistoryItem[]>(`/okr/objectives/${objectiveId}/approval-history`);
+  },
+
+  // === CONTRIBUTORS ===
+
+  // Get my contributions (OKRs where I'm a contributor)
+  async getMyContributions(): Promise<Objective[]> {
+    return fetchAPI<Objective[]>('/okr/my-contributions');
+  },
+
+  // Get contributors for an objective
+  async getContributors(objectiveId: string): Promise<Contributor[]> {
+    return fetchAPI<Contributor[]>(`/okr/objectives/${objectiveId}/contributors`);
+  },
+
+  // Add contributor to objective
+  async addContributor(objectiveId: string, userId: string, role: string = 'contributor'): Promise<Contributor> {
+    return fetchAPI<Contributor>(`/okr/objectives/${objectiveId}/contributors`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, role }),
+    });
+  },
+
+  // Remove contributor from objective
+  async removeContributor(objectiveId: string, contributorId: string): Promise<void> {
+    return fetchAPI<void>(`/okr/objectives/${objectiveId}/contributors/${contributorId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Update contributor role
+  async updateContributorRole(contributorId: string, role: string): Promise<Contributor> {
+    return fetchAPI<Contributor>(`/okr/contributors/${contributorId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
   },
 };
 

@@ -14,7 +14,25 @@ import {
   getStats,
   getProgressHistory,
   getUserDataCount,
-  reassignUserOKRs
+  reassignUserOKRs,
+  // Hierarchy functions
+  getObjectiveChildren,
+  getAvailableParents,
+  getObjectiveHierarchy,
+  getObjectiveWithAncestors,
+  // Approval workflow functions
+  submitForReview,
+  approveObjective,
+  rejectObjective,
+  activateObjective,
+  getApprovalHistory,
+  getPendingApprovals,
+  // Contributors functions
+  getContributors,
+  addContributor,
+  removeContributor,
+  updateContributorRole,
+  getMyContributions
 } from './okr.service.js';
 
 export function createOKRRoutes(config) {
@@ -172,6 +190,268 @@ export function createOKRRoutes(config) {
     try {
       const history = await getProgressHistory(pool, req.params.id);
       res.json(history);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // === HIERARCHY ENDPOINTS ===
+
+  // Get full hierarchy tree
+  router.get('/hierarchy', async (req, res, next) => {
+    try {
+      const { period } = req.query;
+      const hierarchy = await getObjectiveHierarchy(pool, { period });
+      res.json(hierarchy);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get available parent objectives for a given level
+  router.get('/available-parents', async (req, res, next) => {
+    try {
+      const { level, excludeId } = req.query;
+      if (!level) {
+        return res.status(400).json({ error: 'level query parameter is required' });
+      }
+      const parents = await getAvailableParents(pool, level, excludeId);
+      res.json(parents);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get children of an objective
+  router.get('/objectives/:id/children', async (req, res, next) => {
+    try {
+      const children = await getObjectiveChildren(pool, req.params.id);
+      res.json(children);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get objective with ancestors (breadcrumb)
+  router.get('/objectives/:id/ancestors', async (req, res, next) => {
+    try {
+      const result = await getObjectiveWithAncestors(pool, req.params.id);
+      if (!result) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // === APPROVAL WORKFLOW ENDPOINTS ===
+
+  // Get objectives pending approval
+  router.get('/pending-approvals', async (req, res, next) => {
+    try {
+      const isAdmin = req.user.role === 'admin';
+      const objectives = await getPendingApprovals(pool, req.user.id, isAdmin);
+      res.json(objectives);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Submit objective for review
+  router.post('/objectives/:id/submit-for-review', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Only owner can submit for review
+      if (existing.ownerId !== req.user.id) {
+        return res.status(403).json({ error: 'Only the owner can submit for review' });
+      }
+
+      const objective = await submitForReview(pool, req.params.id, req.user.id);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Cannot submit')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Approve objective
+  router.post('/objectives/:id/approve', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Only admin can approve (for now, can be extended to managers)
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can approve objectives' });
+      }
+
+      const { comment } = req.body;
+      const objective = await approveObjective(pool, req.params.id, req.user.id, comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Cannot approve')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Reject objective
+  router.post('/objectives/:id/reject', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Only admin can reject (for now, can be extended to managers)
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can reject objectives' });
+      }
+
+      const { comment } = req.body;
+      if (!comment) {
+        return res.status(400).json({ error: 'Comment is required when rejecting' });
+      }
+
+      const objective = await rejectObjective(pool, req.params.id, req.user.id, comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Cannot reject')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Activate approved objective
+  router.post('/objectives/:id/activate', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Owner or admin can activate
+      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized to activate this objective' });
+      }
+
+      const objective = await activateObjective(pool, req.params.id, req.user.id);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Cannot activate')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Get approval history for an objective
+  router.get('/objectives/:id/approval-history', async (req, res, next) => {
+    try {
+      const history = await getApprovalHistory(pool, req.params.id);
+      res.json(history);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // === CONTRIBUTORS ENDPOINTS ===
+
+  // Get my contributions (OKRs where I'm a contributor)
+  router.get('/my-contributions', async (req, res, next) => {
+    try {
+      const contributions = await getMyContributions(pool, req.user.id);
+      res.json(contributions);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get contributors for an objective
+  router.get('/objectives/:id/contributors', async (req, res, next) => {
+    try {
+      const contributors = await getContributors(pool, req.params.id);
+      res.json(contributors);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Add contributor to objective
+  router.post('/objectives/:id/contributors', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Only owner or admin can add contributors
+      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized to add contributors' });
+      }
+
+      const { userId, role = 'contributor' } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: 'userId is required' });
+      }
+
+      const contributor = await addContributor(pool, req.params.id, userId, role);
+      res.status(201).json(contributor);
+    } catch (error) {
+      if (error.message.includes('already a contributor') || error.message.includes('cannot be added')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Remove contributor from objective
+  router.delete('/objectives/:id/contributors/:contributorId', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Only owner or admin can remove contributors
+      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Not authorized to remove contributors' });
+      }
+
+      const deleted = await removeContributor(pool, req.params.id, req.params.contributorId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Contributor not found' });
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update contributor role
+  router.put('/contributors/:contributorId', async (req, res, next) => {
+    try {
+      const { role } = req.body;
+      if (!role) {
+        return res.status(400).json({ error: 'role is required' });
+      }
+
+      const contributor = await updateContributorRole(pool, req.params.contributorId, role);
+      if (!contributor) {
+        return res.status(404).json({ error: 'Contributor not found' });
+      }
+      res.json(contributor);
     } catch (error) {
       next(error);
     }

@@ -34,7 +34,7 @@ const LoginPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
             <Target className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">OKR Manager</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">OKR Manager</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Sign in to your account</p>
         </div>
 
@@ -58,7 +58,7 @@ const LoginPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={isLoading}
               />
             </div>
@@ -73,7 +73,7 @@ const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={isLoading}
               />
             </div>
@@ -95,12 +95,12 @@ const LoginPage: React.FC = () => {
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+          <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Demo Credentials</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-600">
               <span className="font-medium">Email:</span> admin@example.com
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-600">
               <span className="font-medium">Password:</span> SecurePassword123!
             </p>
           </div>

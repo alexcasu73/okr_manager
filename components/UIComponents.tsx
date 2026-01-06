@@ -11,19 +11,19 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm dark:shadow-gray-900/20 flex flex-col transition-colors duration-300 ${className}`}
+      className={`bg-white dark:bg-slate-800/90 rounded-3xl p-5 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
     >
       {(title || action) && (
-        <div className="flex justify-between items-center mb-6">
-          {title && <h3 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h3>}
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          {title && <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h3>}
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
     </div>
   );
 };
@@ -34,22 +34,22 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  className = '', 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className = '',
   icon,
-  ...props 
+  ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2";
-  
+  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900";
+
   const variants = {
-    primary: "bg-black text-white hover:bg-gray-800 focus:ring-gray-900",
-    secondary: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 focus:ring-indigo-500",
-    outline: "border border-gray-200 text-gray-700 bg-transparent hover:bg-gray-50 focus:ring-gray-500",
-    ghost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-500"
+    primary: "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white focus:ring-slate-900 dark:focus:ring-slate-400",
+    secondary: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900/70 focus:ring-indigo-500",
+    outline: "border border-gray-200 text-gray-700 bg-transparent hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700/50 focus:ring-gray-500",
+    ghost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200",
+    danger: "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 focus:ring-red-500"
   };
 
   const sizes = {
@@ -59,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button 
+    <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
@@ -77,11 +77,11 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, color = 'gray', className = '' }) => {
   const colors = {
-    green: 'bg-green-100 text-green-700',
-    blue: 'bg-blue-100 text-blue-700',
-    yellow: 'bg-amber-100 text-amber-700',
-    red: 'bg-red-100 text-red-700',
-    gray: 'bg-gray-100 text-gray-700',
+    green: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+    yellow: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+    red: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+    gray: 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300',
   };
 
   return (

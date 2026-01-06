@@ -50,7 +50,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -58,15 +58,15 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Create Team</h2>
-              <p className="text-sm text-gray-500">Start collaborating with your team</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Create Team</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Start collaborating with your team</p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-700 rounded-xl transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -80,7 +80,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
 
           {/* Team Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Team Name *
             </label>
             <input
@@ -88,14 +88,14 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Product Team, Engineering"
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isLoading}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Description (optional)
             </label>
             <textarea
@@ -103,7 +103,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this team focus on?"
               rows={3}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               disabled={isLoading}
             />
           </div>
@@ -113,7 +113,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-gray-200 transition-colors"
               disabled={isLoading}
             >
               Cancel

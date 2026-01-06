@@ -28,12 +28,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-none dark:ring-1 dark:ring-slate-700 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -214,13 +214,13 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Profilo</h1>
-        <p className="text-gray-500 text-sm mt-1">Gestisci le tue informazioni personali</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Profilo</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gestisci le tue informazioni personali</p>
       </div>
 
       {/* Profile Picture Section */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Foto Profilo</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Foto Profilo</h2>
 
         <div className="flex items-center gap-6">
           <div className="relative">
@@ -250,14 +250,14 @@ const ProfilePage: React.FC = () => {
                 <button
                   onClick={handleDeleteImage}
                   disabled={uploadingImage}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 text-sm"
                 >
                   <Trash2 className="w-4 h-4" />
                   Rimuovi
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500">JPEG, PNG, GIF o WebP. Max 500KB.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">JPEG, PNG, GIF o WebP. Max 500KB.</p>
             {imageError && (
               <p className="text-xs text-red-600">{imageError}</p>
             )}
@@ -274,8 +274,8 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Profile Info Section */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Informazioni Personali</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Informazioni Personali</h2>
 
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           {profileError && (
@@ -292,28 +292,28 @@ const ProfilePage: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome</label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -335,8 +335,8 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Change Password Section */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Cambia Password</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Cambia Password</h2>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
           {passwordError && (
@@ -353,20 +353,20 @@ const ProfilePage: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password attuale</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password attuale</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type={showCurrentPassword ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
               >
                 {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -374,21 +374,21 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nuova password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nuova password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Minimo 8 caratteri"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
               >
                 {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -396,14 +396,14 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Conferma nuova password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Conferma nuova password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -425,9 +425,9 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-red-200">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 p-6 border border-red-200">
         <h2 className="text-lg font-semibold text-red-600 mb-2">Zona Pericolosa</h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
           Eliminando il tuo account, perderai tutti i tuoi OKR, team e dati associati. Questa azione non può essere annullata.
         </p>
 
@@ -454,22 +454,22 @@ const ProfilePage: React.FC = () => {
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Sei sicuro?</p>
-              <p className="text-sm text-gray-600">
+              <p className="font-medium text-slate-900 dark:text-slate-100">Sei sicuro?</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Tutti i tuoi dati saranno eliminati permanentemente.
               </p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Conferma con la tua password
             </label>
             <input
               type="password"
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               placeholder="Inserisci la tua password"
               required
             />
@@ -479,7 +479,7 @@ const ProfilePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowDeleteModal(false)}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600"
             >
               Annulla
             </button>

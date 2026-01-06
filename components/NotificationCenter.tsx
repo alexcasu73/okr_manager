@@ -155,13 +155,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-gray-900/30 border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
             <h3 className="font-semibold text-gray-900 dark:text-white">Notifiche</h3>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
             >
               <X className="w-4 h-4" />
             </button>
@@ -170,13 +170,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+              <div className="py-8 text-center text-gray-500 dark:text-slate-400 dark:text-slate-500">
                 <div className="animate-spin w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full mx-auto mb-2" />
                 Caricamento...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+              <div className="py-8 text-center text-gray-500 dark:text-slate-400 dark:text-slate-500">
+                <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-slate-600 dark:text-slate-400" />
                 <p>Nessuna notifica</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tutti gli OKR sono in linea!</p>
               </div>
@@ -186,7 +186,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left ${getNotificationBg(notification.type)} border-l-4`}
+                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left ${getNotificationBg(notification.type)} border-l-4`}
                   >
                     <div className="flex-shrink-0 mt-0.5">
                       {getNotificationIcon(notification.type)}
@@ -204,7 +204,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+            <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50">
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                 {criticalCount > 0 && (
                   <span className="text-red-600 font-medium">{criticalCount} critici</span>

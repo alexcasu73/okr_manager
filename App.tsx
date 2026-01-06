@@ -50,10 +50,10 @@ const AppContent: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading...</p>
         </div>
       </div>
     );
@@ -114,13 +114,15 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-gray-900 font-sans transition-colors duration-300">
+    <div className="flex h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 overflow-hidden">
       <Sidebar currentView={currentView} onChangeView={setCurrentView} />
 
-      <main className="flex-1 lg:ml-64 p-4 lg:p-8 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
-          <Header onSelectOKR={(id) => setSelectedOKRId(id)} />
-          {renderContent()}
+      <main className="flex-1 lg:ml-64 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 p-4 lg:p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            <Header onSelectOKR={(id) => setSelectedOKRId(id)} />
+            {renderContent()}
+          </div>
         </div>
       </main>
 

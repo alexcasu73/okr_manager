@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './UIComponents';
 import { ICONS } from '../constants';
-import { okrAPI, CreateObjectiveData, UserBasic } from '../api/client';
-import { Loader2, AlertCircle, Trash2, User } from 'lucide-react';
+import { okrAPI, CreateObjectiveData, UserBasic, ParentObjective, OKRLevel } from '../api/client';
+import { Loader2, AlertCircle, Trash2, User, GitBranch } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface CreateOKRModalProps {
@@ -36,13 +36,16 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserBasic[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [availableParents, setAvailableParents] = useState<ParentObjective[]>([]);
+  const [isLoadingParents, setIsLoadingParents] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    level: 'team' as 'company' | 'department' | 'team' | 'individual',
+    level: 'company' as OKRLevel,
     period: 'Q1 2026',
     dueDate: '',
     ownerId: '',
+    parentObjectiveId: '' as string,
     keyResults: [{ ...emptyKeyResult }] as KeyResultFormData[]
   });
 
@@ -52,6 +55,16 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       loadUsers();
     }
   }, [isOpen]);
+
+  // Load available parents when level changes
+  useEffect(() => {
+    if (isOpen && formData.level !== 'company') {
+      loadAvailableParents(formData.level);
+    } else {
+      setAvailableParents([]);
+      setFormData(prev => ({ ...prev, parentObjectiveId: '' }));
+    }
+  }, [isOpen, formData.level]);
 
   const loadUsers = async () => {
     setIsLoadingUsers(true);
@@ -66,6 +79,19 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       console.error('Failed to load users:', err);
     } finally {
       setIsLoadingUsers(false);
+    }
+  };
+
+  const loadAvailableParents = async (level: OKRLevel) => {
+    setIsLoadingParents(true);
+    try {
+      const parents = await okrAPI.getAvailableParents(level);
+      setAvailableParents(parents);
+    } catch (err) {
+      console.error('Failed to load available parents:', err);
+      setAvailableParents([]);
+    } finally {
+      setIsLoadingParents(false);
     }
   };
 
@@ -94,13 +120,15 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const resetForm = () => {
     setStep(1);
     setError(null);
+    setAvailableParents([]);
     setFormData({
       title: '',
       description: '',
-      level: 'team',
+      level: 'company',
       period: 'Q1 2026',
       dueDate: '',
       ownerId: currentUser?.id || '',
+      parentObjectiveId: '',
       keyResults: [{ ...emptyKeyResult }]
     });
   };
@@ -136,6 +164,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
         period: formData.period,
         dueDate: formData.dueDate || undefined,
         ownerId: formData.ownerId || undefined,
+        parentObjectiveId: formData.parentObjectiveId || undefined,
         keyResults: validKRs.map(kr => ({
           description: kr.description,
           metricType: kr.metricType,
@@ -158,12 +187,12 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl dark:shadow-gray-900/50">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl dark:shadow-none dark:ring-1 dark:ring-slate-700">
+        <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
             {step === 1 ? 'Nuovo Obiettivo' : 'Key Results'}
           </h2>
-          <button onClick={handleClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" disabled={isSubmitting}>
+          <button onClick={handleClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-600" disabled={isSubmitting}>
             {ICONS.Error}
           </button>
         </div>
@@ -179,10 +208,10 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titolo Obiettivo *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Titolo Obiettivo *</label>
                 <input
                   type="text"
-                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   placeholder="es. Aumentare la brand awareness"
                   value={formData.title}
                   onChange={e => setFormData({...formData, title: e.target.value})}
@@ -192,9 +221,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrizione</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrizione</label>
                 <textarea
-                  className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                  className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
                   placeholder="Descrivi l'obiettivo in dettaglio..."
                   rows={3}
                   value={formData.description}
@@ -205,23 +234,22 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Livello</label>
+                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Livello</label>
                    <select
-                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl pl-4 pr-12 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                       value={formData.level}
-                      onChange={e => setFormData({...formData, level: e.target.value as typeof formData.level})}
+                      onChange={e => setFormData({...formData, level: e.target.value as OKRLevel, parentObjectiveId: ''})}
                       disabled={isSubmitting}
                    >
                      <option value="company">Azienda</option>
-                     <option value="department">Dipartimento</option>
                      <option value="team">Team</option>
                      <option value="individual">Individuale</option>
                    </select>
                 </div>
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Periodo</label>
+                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Periodo</label>
                    <select
-                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl pl-4 pr-12 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                       value={formData.period}
                       onChange={e => setFormData({...formData, period: e.target.value})}
                       disabled={isSubmitting}
@@ -235,13 +263,47 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                 </div>
               </div>
 
+              {/* Parent OKR Selector - only show when level is not 'company' */}
+              {formData.level !== 'company' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    OKR Parent (opzionale)
+                  </label>
+                  <div className="relative">
+                    <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                    <select
+                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl pl-10 pr-12 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
+                      value={formData.parentObjectiveId}
+                      onChange={e => setFormData({...formData, parentObjectiveId: e.target.value})}
+                      disabled={isSubmitting || isLoadingParents}
+                    >
+                      <option value="">Nessun parent (OKR indipendente)</option>
+                      {isLoadingParents ? (
+                        <option disabled>Caricamento...</option>
+                      ) : (
+                        availableParents.map(parent => (
+                          <option key={parent.id} value={parent.id}>
+                            [{parent.level === 'company' ? 'Azienda' : 'Team'}] {parent.title} ({parent.period})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  {availableParents.length === 0 && !isLoadingParents && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Nessun OKR di livello superiore disponibile come parent
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assegnato a *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Assegnato a *</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <select
-                      className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl pl-10 pr-12 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                       value={formData.ownerId}
                       onChange={e => setFormData({...formData, ownerId: e.target.value})}
                       disabled={isSubmitting || isLoadingUsers}
@@ -263,10 +325,10 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Scadenza</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Scadenza</label>
                   <input
                     type="date"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                     value={formData.dueDate}
                     onChange={e => setFormData({...formData, dueDate: e.target.value})}
                     disabled={isSubmitting}
@@ -279,7 +341,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
           {step === 2 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
-                 <h3 className="text-sm font-bold text-gray-900">Key Results</h3>
+                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Key Results</h3>
                  <button
                    type="button"
                    onClick={handleAddKR}
@@ -290,19 +352,19 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                  </button>
               </div>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Definisci i risultati chiave misurabili per questo obiettivo
               </p>
 
               {formData.keyResults.map((kr, idx) => (
-                <div key={idx} className="bg-gray-50 p-4 rounded-2xl space-y-3 relative">
+                <div key={idx} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl space-y-3 relative">
                    <div className="flex items-start gap-2">
                      <div className="flex-1">
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Descrizione *</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Descrizione *</label>
                        <input
                          type="text"
                          placeholder="es. Generare 50 nuovi lead qualificati"
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.description}
                          onChange={e => handleKRChange(idx, 'description', e.target.value)}
                          disabled={isSubmitting}
@@ -322,9 +384,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
                    <div className="grid grid-cols-2 gap-3">
                      <div>
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Tipo Metrica</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tipo Metrica</label>
                        <select
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 pl-3 pr-10 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 appearance-none bg-no-repeat bg-[length:14px_14px] bg-[position:right_12px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                          value={kr.metricType}
                          onChange={e => handleKRChange(idx, 'metricType', e.target.value)}
                          disabled={isSubmitting}
@@ -336,11 +398,11 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                        </select>
                      </div>
                      <div>
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Unità (opzionale)</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Unità (opzionale)</label>
                        <input
                          type="text"
                          placeholder="es. leads, €, utenti"
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.unit}
                          onChange={e => handleKRChange(idx, 'unit', e.target.value)}
                          disabled={isSubmitting}
@@ -350,30 +412,30 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
                    <div className="grid grid-cols-3 gap-3">
                      <div>
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Valore Iniziale</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valore Iniziale</label>
                        <input
                          type="number"
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.startValue}
                          onChange={e => handleKRChange(idx, 'startValue', e.target.value)}
                          disabled={isSubmitting}
                        />
                      </div>
                      <div>
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Valore Attuale</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valore Attuale</label>
                        <input
                          type="number"
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.currentValue}
                          onChange={e => handleKRChange(idx, 'currentValue', e.target.value)}
                          disabled={isSubmitting}
                        />
                      </div>
                      <div>
-                       <label className="block text-xs font-medium text-gray-500 mb-1">Valore Target *</label>
+                       <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Valore Target *</label>
                        <input
                          type="number"
-                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.targetValue}
                          onChange={e => handleKRChange(idx, 'targetValue', e.target.value)}
                          disabled={isSubmitting}
@@ -385,7 +447,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
              {step === 2 && (
                <Button type="button" variant="ghost" onClick={() => setStep(1)} disabled={isSubmitting}>
                  Indietro

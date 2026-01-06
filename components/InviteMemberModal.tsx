@@ -123,18 +123,18 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Add Member</h2>
-            <p className="text-sm text-gray-500">Add someone to {teamName}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Add Member</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Add someone to {teamName}</p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="p-2 hover:bg-slate-100 dark:bg-slate-700 rounded-xl transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -146,7 +146,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-colors ${
               mode === 'add'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-gray-200'
             }`}
           >
             <UserPlus className="w-4 h-4" />
@@ -158,7 +158,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-colors ${
               mode === 'invite'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-gray-200'
             }`}
           >
             <Mail className="w-4 h-4" />
@@ -177,7 +177,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           {mode === 'add' ? (
             /* Search User */
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Search User
               </label>
               {selectedUser ? (
@@ -189,8 +189,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                       className="w-10 h-10 rounded-full"
                     />
                     <div>
-                      <p className="font-medium text-gray-900">{selectedUser.name}</p>
-                      <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                      <p className="font-medium text-slate-900 dark:text-slate-100">{selectedUser.name}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{selectedUser.email}</p>
                     </div>
                   </div>
                   <button
@@ -198,22 +198,22 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                     onClick={() => setSelectedUser(null)}
                     className="p-1.5 hover:bg-blue-100 rounded-lg"
                   >
-                    <X className="w-4 h-4 text-gray-500" />
+                    <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   </button>
                 </div>
               ) : (
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by name or email..."
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={isLoading}
                   />
                   {isSearching && (
-                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500 animate-spin" />
                   )}
 
                   {/* Search Results Dropdown */}
@@ -224,7 +224,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                           key={user.id}
                           type="button"
                           onClick={() => handleSelectUser(user)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 text-left"
+                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:bg-slate-700 text-left"
                         >
                           <img
                             src={user.avatar}
@@ -232,8 +232,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                             className="w-10 h-10 rounded-full"
                           />
                           <div>
-                            <p className="font-medium text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
+                            <p className="font-medium text-slate-900 dark:text-slate-100">{user.name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
                           </div>
                         </button>
                       ))}
@@ -241,7 +241,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                   )}
 
                   {searchQuery.length >= 2 && !isSearching && searchResults.length === 0 && (
-                    <div className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-lg border p-4 text-center text-gray-500">
+                    <div className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-lg border p-4 text-center text-slate-500 dark:text-slate-400">
                       No users found. Try inviting by email.
                     </div>
                   )}
@@ -251,17 +251,17 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           ) : (
             /* Email Input */
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="colleague@company.com"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
                 />
               </div>
@@ -270,7 +270,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
           {/* Role Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Role
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -280,15 +280,15 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
                   role === 'member'
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 dark:border-slate-600 hover:border-gray-300'
                 }`}
               >
-                <User className={`w-5 h-5 ${role === 'member' ? 'text-blue-600' : 'text-gray-400'}`} />
+                <User className={`w-5 h-5 ${role === 'member' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'}`} />
                 <div className="text-left">
-                  <p className={`font-medium ${role === 'member' ? 'text-blue-900' : 'text-gray-900'}`}>
+                  <p className={`font-medium ${role === 'member' ? 'text-blue-900' : 'text-slate-900 dark:text-slate-100'}`}>
                     Member
                   </p>
-                  <p className="text-xs text-gray-500">Can view and edit</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Can view and edit</p>
                 </div>
               </button>
               <button
@@ -297,15 +297,15 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
                   role === 'admin'
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-slate-200 dark:border-slate-600 hover:border-gray-300'
                 }`}
               >
-                <Shield className={`w-5 h-5 ${role === 'admin' ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Shield className={`w-5 h-5 ${role === 'admin' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'}`} />
                 <div className="text-left">
-                  <p className={`font-medium ${role === 'admin' ? 'text-blue-900' : 'text-gray-900'}`}>
+                  <p className={`font-medium ${role === 'admin' ? 'text-blue-900' : 'text-slate-900 dark:text-slate-100'}`}>
                     Admin
                   </p>
-                  <p className="text-xs text-gray-500">Can manage team</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Can manage team</p>
                 </div>
               </button>
             </div>
@@ -316,7 +316,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-gray-200 transition-colors"
               disabled={isLoading}
             >
               Cancel

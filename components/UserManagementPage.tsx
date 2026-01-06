@@ -33,12 +33,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:bg-slate-700"
           >
             <X className="w-5 h-5" />
           </button>
@@ -269,12 +269,12 @@ const UserManagementPage: React.FC = () => {
   if (currentUser?.role !== 'admin') {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="bg-white rounded-2xl shadow-sm p-12 text-center max-w-md">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-12 text-center max-w-md">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Shield className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Accesso Negato</h2>
-          <p className="text-gray-500 text-sm">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Accesso Negato</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
             Solo gli amministratori possono accedere a questa sezione.
           </p>
         </div>
@@ -287,8 +287,8 @@ const UserManagementPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestione Utenti</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestisci gli utenti della piattaforma</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Gestione Utenti</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gestisci gli utenti della piattaforma</p>
         </div>
         <button
           onClick={() => {
@@ -303,22 +303,22 @@ const UserManagementPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Cerca per nome o email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
           >
             <option value="">Tutti i ruoli</option>
             <option value="admin">Admin</option>
@@ -336,52 +336,52 @@ const UserManagementPage: React.FC = () => {
       )}
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
         {loading ? (
           <div className="p-12 text-center">
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2" />
-            <p className="text-gray-500">Caricamento utenti...</p>
+            <Loader2 className="w-8 h-8 text-slate-400 dark:text-slate-500 animate-spin mx-auto mb-2" />
+            <p className="text-slate-500 dark:text-slate-400">Caricamento utenti...</p>
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-12 text-center">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nessun utente trovato</p>
+            <p className="text-slate-500 dark:text-slate-400">Nessun utente trovato</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-slate-50 dark:bg-slate-700 border-b border-slate-100 dark:border-slate-700">
                 <tr>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 uppercase">Role</th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 uppercase">Plan</th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-gray-500 uppercase">Created</th>
-                  <th className="text-right px-6 py-4 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">User</th>
+                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Email</th>
+                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Role</th>
+                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Plan</th>
+                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Created</th>
+                  <th className="text-right px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                           <UserCheck className="w-5 h-5" />
                         </div>
-                        <span className="font-medium text-gray-900">{user.name}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{user.name}</span>
                         {user.id === currentUser?.id && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Tu</span>
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Tu</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                       {user.email}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                         user.role === 'admin'
-                          ? 'border-purple-300 text-purple-700 bg-purple-50'
-                          : 'border-gray-300 text-gray-700 bg-white'
+                          ? 'border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/40'
+                          : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700'
                       }`}>
                         {user.role === 'admin' ? 'Admin' : 'User'}
                       </span>
@@ -389,34 +389,34 @@ const UserManagementPage: React.FC = () => {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         user.subscription_tier === 'premium'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                       }`}>
                         {user.subscription_tier === 'premium' ? 'Premium' : 'Free'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                       {new Date(user.created_at).toLocaleDateString('it-IT')}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleToggleSubscription(user)}
-                          className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                           title={user.subscription_tier === 'premium' ? 'Rimuovi Premium' : 'Rendi Premium'}
                         >
                           <Crown className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => openResetPasswordModal(user)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Reset Password"
                         >
                           <Key className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => openEditModal(user)}
-                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-700 rounded-lg transition-colors"
                           title="Modifica"
                         >
                           <Edit2 className="w-5 h-5" />
@@ -424,7 +424,7 @@ const UserManagementPage: React.FC = () => {
                         {user.id !== currentUser?.id ? (
                           <button
                             onClick={() => openDeleteModal(user)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Elimina"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -451,43 +451,43 @@ const UserManagementPage: React.FC = () => {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome</label>
             <input
               type="text"
               required
               value={createForm.name}
               onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
             <input
               type="email"
               required
               value={createForm.email}
               onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
             <input
               type="password"
               required
               minLength={8}
               value={createForm.password}
               onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Minimo 8 caratteri"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ruolo</label>
             <select
               value={createForm.role}
               onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as 'user' | 'admin' })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
@@ -497,7 +497,7 @@ const UserManagementPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowCreateModal(false)}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700"
             >
               Annulla
             </button>
@@ -522,45 +522,45 @@ const UserManagementPage: React.FC = () => {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome</label>
             <input
               type="text"
               required
               value={editForm.name}
               onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
             <input
               type="email"
               required
               value={editForm.email}
               onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ruolo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ruolo</label>
             <select
               value={editForm.role}
               onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
               disabled={selectedUser?.id === currentUser?.id}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
             {selectedUser?.id === currentUser?.id && (
-              <p className="text-xs text-gray-500 mt-1">Non puoi cambiare il tuo ruolo</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Non puoi cambiare il tuo ruolo</p>
             )}
           </div>
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={() => setShowEditModal(false)}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700"
             >
               Annulla
             </button>
@@ -599,8 +599,8 @@ const UserManagementPage: React.FC = () => {
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Sei sicuro?</p>
-              <p className="text-sm text-gray-600">
+              <p className="font-medium text-slate-900 dark:text-slate-100">Sei sicuro?</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Stai per eliminare <strong>{selectedUser?.name}</strong>. Questa azione non può essere annullata.
               </p>
             </div>
@@ -609,8 +609,8 @@ const UserManagementPage: React.FC = () => {
           {/* Data count section */}
           {deleteLoadingData ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-              <span className="ml-2 text-sm text-gray-500">Caricamento dati...</span>
+              <Loader2 className="w-5 h-5 animate-spin text-slate-400 dark:text-slate-500" />
+              <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Caricamento dati...</span>
             </div>
           ) : userDataCount && userDataCount.hasData ? (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
@@ -693,8 +693,8 @@ const UserManagementPage: React.FC = () => {
               )}
             </div>
           ) : userDataCount && !userDataCount.hasData ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-sm text-gray-600">
+            <div className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Questo utente non ha OKR o team associati. Puoi procedere con l'eliminazione.
               </p>
             </div>
@@ -705,7 +705,7 @@ const UserManagementPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowDeleteModal(false)}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700"
             >
               Annulla
             </button>
@@ -739,7 +739,7 @@ const UserManagementPage: React.FC = () => {
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Comunica questa password all'utente. Dovrà cambiarla al primo accesso.
             </p>
             <button
@@ -756,18 +756,18 @@ const UserManagementPage: React.FC = () => {
                 {formError}
               </div>
             )}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Resetta la password per <strong>{selectedUser?.name}</strong>
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Nuova Password (opzionale)
               </label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Lascia vuoto per generare automaticamente"
               />
             </div>
@@ -775,7 +775,7 @@ const UserManagementPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowResetPasswordModal(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700"
               >
                 Annulla
               </button>

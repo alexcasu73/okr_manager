@@ -264,18 +264,18 @@ const TeamPage: React.FC = () => {
       case 'admin':
         return <Shield className="w-4 h-4 text-blue-500" />;
       default:
-        return <User className="w-4 h-4 text-gray-400" />;
+        return <User className="w-4 h-4 text-slate-400 dark:text-slate-500" />;
     }
   };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'owner':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400';
       case 'admin':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
     }
   };
 
@@ -298,17 +298,17 @@ const TeamPage: React.FC = () => {
     <div className="space-y-6">
       {/* Pending Invitations Banner */}
       {pendingInvitations.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2">
             <Mail className="w-5 h-5" />
             Pending Invitations
           </h3>
           <div className="space-y-2">
             {pendingInvitations.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between bg-white rounded-xl p-3">
+              <div key={inv.id} className="flex items-center justify-between bg-white dark:bg-slate-700 rounded-xl p-3">
                 <div>
-                  <p className="font-medium text-gray-900">{inv.teamName}</p>
-                  <p className="text-sm text-gray-500">Invited by {inv.invitedByName}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{inv.teamName}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Invited by {inv.invitedByName}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -320,7 +320,7 @@ const TeamPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => handleDeclineInvitation(inv.inviteLink?.split('/').pop() || '')}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-300 dark:hover:bg-slate-500"
                   >
                     <XCircle className="w-4 h-4" />
                     Decline
@@ -334,11 +334,11 @@ const TeamPage: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500" />
-          <p className="text-red-700">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
+          <p className="text-red-700 dark:text-red-300">{error}</p>
           <button onClick={() => setError(null)} className="ml-auto">
-            <X className="w-5 h-5 text-red-400 hover:text-red-600" />
+            <X className="w-5 h-5 text-red-400 hover:text-red-600 dark:hover:text-red-300" />
           </button>
         </div>
       )}
@@ -346,8 +346,8 @@ const TeamPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Team</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage your team members and invitations</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Team</h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage your team members and invitations</p>
         </div>
         <button
           onClick={() => setIsCreateTeamModalOpen(true)}
@@ -359,10 +359,10 @@ const TeamPage: React.FC = () => {
       </div>
 
       {teams.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 text-center">
-          <Users className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No teams yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first team to start collaborating</p>
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-12 text-center shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
+          <Users className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No teams yet</h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Create your first team to start collaborating</p>
           <button
             onClick={() => setIsCreateTeamModalOpen(true)}
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700"
@@ -375,8 +375,8 @@ const TeamPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Team Selector */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-gray-900/20">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Your Teams</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Your Teams</h3>
               <div className="space-y-2">
                 {teams.map((team) => (
                   <button
@@ -384,11 +384,11 @@ const TeamPage: React.FC = () => {
                     onClick={() => setSelectedTeam(team)}
                     className={`w-full text-left p-3 rounded-xl transition-colors ${selectedTeam?.id === team.id
                       ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-transparent'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-700 border-2 border-transparent'
                       }`}
                   >
-                    <p className="font-medium text-gray-900 dark:text-white">{team.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{team.memberCount} members</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{team.name}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{team.memberCount} members</p>
                   </button>
                 ))}
               </div>
@@ -400,12 +400,12 @@ const TeamPage: React.FC = () => {
             {selectedTeam && (
               <>
                 {/* Team Header */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm dark:shadow-gray-900/20">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
                   <div className="flex items-center justify-between min-h-[44px]">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedTeam.name}</h2>
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{selectedTeam.name}</h2>
                       {selectedTeam.description && (
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">{selectedTeam.description}</p>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">{selectedTeam.description}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -420,7 +420,7 @@ const TeamPage: React.FC = () => {
                           </button>
                           <button
                             onClick={() => openEditModal(selectedTeam)}
-                            className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2.5 rounded-xl hover:bg-gray-700 transition-colors"
+                            className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2.5 rounded-xl hover:bg-slate-700 transition-colors"
                             title="Edit team"
                           >
                             <Edit className="w-5 h-5" />
@@ -443,8 +443,8 @@ const TeamPage: React.FC = () => {
                 </div>
 
                 {/* Members List */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                     <Users className="w-5 h-5" />
                     Members ({members.length})
                   </h3>
@@ -452,7 +452,7 @@ const TeamPage: React.FC = () => {
                     {members.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                        className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-xl"
                       >
                         <div className="flex items-center gap-4">
                           <img
@@ -461,8 +461,8 @@ const TeamPage: React.FC = () => {
                             className="w-12 h-12 rounded-full"
                           />
                           <div>
-                            <p className="font-medium text-gray-900">{member.name}</p>
-                            <p className="text-sm text-gray-500">{member.email}</p>
+                            <p className="font-medium text-slate-900 dark:text-slate-100">{member.name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{member.email}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -474,15 +474,15 @@ const TeamPage: React.FC = () => {
                             <div className="relative">
                               <button
                                 onClick={() => setActionMenuOpen(actionMenuOpen === member.id ? null : member.id)}
-                                className="p-2 hover:bg-gray-200 rounded-lg"
+                                className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg"
                               >
-                                <MoreVertical className="w-5 h-5 text-gray-500" />
+                                <MoreVertical className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                               </button>
                               {actionMenuOpen === member.id && (
-                                <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border z-10">
+                                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-10">
                                   <button
                                     onClick={() => handleRemoveMember(member.id)}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-xl"
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl"
                                   >
                                     <UserMinus className="w-4 h-4" />
                                     Remove from team
@@ -499,8 +499,8 @@ const TeamPage: React.FC = () => {
 
                 {/* Pending Invitations */}
                 {canManageTeam && invitations.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                       <Clock className="w-5 h-5" />
                       Pending Invitations ({invitations.length})
                     </h3>
@@ -508,15 +508,15 @@ const TeamPage: React.FC = () => {
                       {invitations.map((invitation) => (
                         <div
                           key={invitation.id}
-                          className="flex items-center justify-between p-4 bg-yellow-50 rounded-xl border border-yellow-100"
+                          className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-800"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                              <Mail className="w-6 h-6 text-yellow-600" />
+                            <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/40 rounded-full flex items-center justify-center">
+                              <Mail className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{invitation.email}</p>
-                              <p className="text-sm text-gray-500">
+                              <p className="font-medium text-slate-900 dark:text-slate-100">{invitation.email}</p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Invited as {invitation.role} by {invitation.invitedByName}
                               </p>
                             </div>
@@ -525,7 +525,7 @@ const TeamPage: React.FC = () => {
                             <button
                               onClick={() => handleResendInvitation(invitation.id)}
                               disabled={resendingId === invitation.id}
-                              className="flex items-center gap-1 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg text-sm disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg text-sm disabled:opacity-50"
                             >
                               {resendingId === invitation.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -536,7 +536,7 @@ const TeamPage: React.FC = () => {
                             </button>
                             <button
                               onClick={() => handleCancelInvitation(invitation.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-sm"
+                              className="flex items-center gap-1 px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-sm"
                             >
                               <Trash2 className="w-4 h-4" />
                               Cancel
@@ -581,27 +581,27 @@ const TeamPage: React.FC = () => {
       {isDeleteModalOpen && teamToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => !isDeleting && setIsDeleteModalOpen(false)} />
-          <div className="relative bg-white rounded-3xl shadow-xl w-full max-w-md mx-4 p-6">
+          <div className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-xl dark:shadow-none dark:ring-1 dark:ring-slate-700 w-full max-w-md mx-4 p-6">
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-red-100 rounded-xl">
                 <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Delete Team?</h2>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Delete Team?</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">This action cannot be undone</p>
               </div>
             </div>
 
             {/* Content */}
             <div className="mb-6">
-              <p className="text-gray-700 mb-2">
+              <p className="text-slate-700 dark:text-slate-300 mb-2">
                 Are you sure you want to delete <strong>{teamToDelete.name}</strong>?
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 This will permanently remove:
               </p>
-              <ul className="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
+              <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 mt-2 space-y-1">
                 <li>All team members ({teamToDelete.memberCount} members)</li>
                 <li>All pending invitations</li>
                 <li>All team data</li>
@@ -613,7 +613,7 @@ const TeamPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                 disabled={isDeleting}
               >
                 Cancel
