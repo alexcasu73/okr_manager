@@ -386,6 +386,14 @@ export async function createObjective(pool, data, userId) {
   try {
     await client.query('BEGIN');
 
+    // Parent OKR is mandatory for team and individual levels
+    if (level === 'team' && !parentObjectiveId) {
+      throw new Error('Gli OKR di livello Team devono avere un OKR Azienda come parent');
+    }
+    if (level === 'individual' && !parentObjectiveId) {
+      throw new Error('Gli OKR di livello Individuale devono avere un OKR Team come parent');
+    }
+
     // Validate parent-child hierarchy if parentObjectiveId is provided
     if (parentObjectiveId) {
       const validation = await validateParentChild(client, level, parentObjectiveId);
@@ -429,32 +437,39 @@ export async function createObjective(pool, data, userId) {
 }
 
 // Validate parent-child relationship rules
+// Hierarchy: company -> team -> individual
+// Team must have company parent, Individual must have team parent
 async function validateParentChild(client, childLevel, parentId) {
-  const levelHierarchy = {
-    'company': 0,
-    'department': 1,
-    'team': 2,
-    'individual': 3
-  };
-
   const { rows } = await client.query(
     'SELECT level FROM objectives WHERE id = $1',
     [parentId]
   );
 
   if (rows.length === 0) {
-    return { valid: false, error: 'Parent objective not found' };
+    return { valid: false, error: 'OKR parent non trovato' };
   }
 
   const parentLevel = rows[0].level;
-  const parentRank = levelHierarchy[parentLevel];
-  const childRank = levelHierarchy[childLevel];
 
-  // Child level must be lower in hierarchy (higher rank number)
-  if (childRank <= parentRank) {
+  // Strict hierarchy enforcement
+  if (childLevel === 'team') {
+    if (parentLevel !== 'company') {
+      return {
+        valid: false,
+        error: 'Gli OKR di livello Team devono avere un OKR di livello Azienda come parent'
+      };
+    }
+  } else if (childLevel === 'individual') {
+    if (parentLevel !== 'team') {
+      return {
+        valid: false,
+        error: 'Gli OKR di livello Individuale devono avere un OKR di livello Team come parent'
+      };
+    }
+  } else if (childLevel === 'company') {
     return {
       valid: false,
-      error: `A ${childLevel} OKR cannot have a ${parentLevel} OKR as parent. Parent must be a higher level.`
+      error: 'Gli OKR di livello Azienda non possono avere un parent'
     };
   }
 
@@ -765,14 +780,16 @@ export async function getObjectiveChildren(pool, parentId) {
 
 /**
  * Get available parent objectives for a given level
- * Returns objectives that can be valid parents based on hierarchy rules
+ * Returns objectives that can be valid parents based on strict hierarchy rules:
+ * - Company: no parents
+ * - Team: only company parents
+ * - Individual: only team parents
  */
 export async function getAvailableParents(pool, level, excludeId = null) {
   const levelHierarchy = {
     'company': [],           // Company can't have parents
-    'department': ['company'],
-    'team': ['company', 'department'],
-    'individual': ['company', 'department', 'team']
+    'team': ['company'],     // Team must have company parent
+    'individual': ['team']   // Individual must have team parent
   };
 
   const validParentLevels = levelHierarchy[level] || [];

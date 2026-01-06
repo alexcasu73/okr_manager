@@ -148,6 +148,16 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       return;
     }
 
+    // Parent OKR is required for team and individual levels
+    if (formData.level === 'team' && !formData.parentObjectiveId) {
+      setError('Per gli OKR di livello Team è obbligatorio selezionare un OKR Azienda come parent');
+      return;
+    }
+    if (formData.level === 'individual' && !formData.parentObjectiveId) {
+      setError('Per gli OKR di livello Individuale è obbligatorio selezionare un OKR Team come parent');
+      return;
+    }
+
     const validKRs = formData.keyResults.filter(kr => kr.description.trim());
     if (validKRs.length === 0) {
       setError('Aggiungi almeno un Key Result');
@@ -263,11 +273,14 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                 </div>
               </div>
 
-              {/* Parent OKR Selector - only show when level is not 'company' */}
+              {/* Parent OKR Selector - required for team and individual levels */}
               {formData.level !== 'company' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    OKR Parent (opzionale)
+                    OKR Parent *
+                    <span className="font-normal text-slate-500 dark:text-slate-400 ml-1">
+                      ({formData.level === 'team' ? 'Azienda' : 'Team'})
+                    </span>
                   </label>
                   <div className="relative">
                     <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
@@ -276,8 +289,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                       value={formData.parentObjectiveId}
                       onChange={e => setFormData({...formData, parentObjectiveId: e.target.value})}
                       disabled={isSubmitting || isLoadingParents}
+                      required
                     >
-                      <option value="">Nessun parent (OKR indipendente)</option>
+                      <option value="">Seleziona OKR parent...</option>
                       {isLoadingParents ? (
                         <option disabled>Caricamento...</option>
                       ) : (
@@ -290,8 +304,10 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                     </select>
                   </div>
                   {availableParents.length === 0 && !isLoadingParents && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Nessun OKR di livello superiore disponibile come parent
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      {formData.level === 'team'
+                        ? 'Devi prima creare un OKR di livello Azienda per poter creare OKR di Team'
+                        : 'Devi prima creare un OKR di livello Team per poter creare OKR Individuali'}
                     </p>
                   )}
                 </div>
