@@ -168,7 +168,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -181,7 +181,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 Search User
               </label>
               {selectedUser ? (
-                <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl">
                   <div className="flex items-center gap-3">
                     <img
                       src={selectedUser.avatar}
@@ -279,13 +279,13 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 onClick={() => setRole('member')}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
                   role === 'member'
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                     : 'border-slate-200 dark:border-slate-600 hover:border-gray-300'
                 }`}
               >
-                <User className={`w-5 h-5 ${role === 'member' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'}`} />
+                <User className={`w-5 h-5 ${role === 'member' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
                 <div className="text-left">
-                  <p className={`font-medium ${role === 'member' ? 'text-blue-900' : 'text-slate-900 dark:text-slate-100'}`}>
+                  <p className={`font-medium ${role === 'member' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
                     Member
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Can view and edit</p>
@@ -296,13 +296,13 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 onClick={() => setRole('admin')}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-colors ${
                   role === 'admin'
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                     : 'border-slate-200 dark:border-slate-600 hover:border-gray-300'
                 }`}
               >
-                <Shield className={`w-5 h-5 ${role === 'admin' ? 'text-blue-600' : 'text-slate-400 dark:text-slate-500'}`} />
+                <Shield className={`w-5 h-5 ${role === 'admin' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
                 <div className="text-left">
-                  <p className={`font-medium ${role === 'admin' ? 'text-blue-900' : 'text-slate-900 dark:text-slate-100'}`}>
+                  <p className={`font-medium ${role === 'admin' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-900 dark:text-slate-100'}`}>
                     Admin
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Can manage team</p>

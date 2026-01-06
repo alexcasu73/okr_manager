@@ -38,18 +38,43 @@ export const ICONS = {
   Admin: <Shield size={20} />,
 };
 
-export const STATUS_COLORS = {
+// Colori per ApprovalStatus (flusso di approvazione)
+export const STATUS_COLORS: Record<string, string> = {
+  'draft': 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+  'pending_review': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+  'approved': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400',
+  'active': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  'paused': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
+  'stopped': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+  'archived': 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  // Fallback per vecchi valori
   'on-track': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
   'at-risk': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
   'off-track': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
   'completed': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
-  'draft': 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
 };
 
-export const PROGRESS_COLORS = {
+export const PROGRESS_COLORS: Record<string, string> = {
+  'draft': '#9CA3AF',
+  'pending_review': '#F59E0B',
+  'approved': '#8B5CF6',
+  'active': '#10B981',
+  'paused': '#F97316',
+  'stopped': '#EF4444',
+  'archived': '#6B7280',
+  // Fallback per vecchi valori
   'on-track': '#10B981',
   'at-risk': '#F59E0B',
   'off-track': '#EF4444',
   'completed': '#3B82F6',
-  'draft': '#9CA3AF',
+};
+
+export const STATUS_LABELS: Record<string, string> = {
+  'draft': 'Bozza',
+  'pending_review': 'In revisione',
+  'approved': 'Approvato',
+  'active': 'Attivo',
+  'paused': 'In pausa',
+  'stopped': 'Fermato',
+  'archived': 'Archiviato',
 };

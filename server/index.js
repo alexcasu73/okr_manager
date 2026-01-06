@@ -43,7 +43,7 @@ app.use(createGeneralLimiter());
 
 // Body parsing (raw for Stripe webhooks, JSON for everything else)
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // === DATABASE ===
 const pool = createPool(process.env.DATABASE_URL);

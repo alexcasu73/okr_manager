@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Badge, ProgressBar } from './UIComponents';
 import { User } from '../types';
-import { ICONS, STATUS_COLORS, PROGRESS_COLORS } from '../constants';
+import { ICONS, STATUS_COLORS, PROGRESS_COLORS, STATUS_LABELS } from '../constants';
 import { okrAPI, Objective } from '../api/client';
 import { Loader2, RefreshCw } from 'lucide-react';
 
@@ -13,7 +13,7 @@ interface OKRListProps {
 }
 
 const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUser, refreshTrigger }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'company' | 'team' | 'individual'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'company' | 'team' | 'individual' | 'archived'>('all');
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,8 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     try {
       setIsLoading(true);
       setError(null);
-      const filters = activeTab !== 'all' ? { level: activeTab } : {};
+      // 'archived' tab fetches all and filters client-side, level tabs filter by level
+      const filters = (activeTab !== 'all' && activeTab !== 'archived') ? { level: activeTab } : {};
       const data = await okrAPI.getObjectives(filters);
       setObjectives(data);
     } catch (err) {
@@ -37,8 +38,13 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
   }, [fetchObjectives, refreshTrigger]);
 
   const filteredObjectives = objectives.filter(obj => {
-    // Filter by permissions (admin sees all, others see their own)
-    if (currentUser.role !== 'admin' && obj.ownerId !== currentUser.id) {
+    // Backend already filters by owner/contributor, just handle archived tab here
+    // In 'archived' tab, show only archived OKRs
+    if (activeTab === 'archived') {
+      return obj.approvalStatus === 'archived';
+    }
+    // In other tabs, exclude archived OKRs
+    if (obj.approvalStatus === 'archived') {
       return false;
     }
     return true;
@@ -48,7 +54,8 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     all: 'Tutti',
     company: 'Azienda',
     team: 'Team',
-    individual: 'Individuali'
+    individual: 'Individuali',
+    archived: 'Archiviati'
   };
 
   return (
@@ -79,7 +86,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 pb-1">
-        {(['all', 'company', 'team', 'individual'] as const).map((tab) => (
+        {(['all', 'company', 'team', 'individual', 'archived'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -97,7 +104,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
 
       {/* Error state */}
       {error && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-red-600 text-sm">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl p-4 text-red-600 dark:text-red-400 text-sm">
           {error}
           <button onClick={fetchObjectives} className="ml-2 underline">Riprova</button>
         </div>
@@ -134,9 +141,12 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className={`w-2.5 h-2.5 rounded-full ${STATUS_COLORS[obj.status].split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></span>
+                      <span className={`w-2.5 h-2.5 rounded-full ${(STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']).split(' ')[0].replace('100', '500')}`}></span>
                       <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{obj.title}</h3>
-                      <Badge className="ml-2 capitalize">{obj.period}</Badge>
+                      <Badge className={`ml-2 ${STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']}`}>
+                        {STATUS_LABELS[obj.approvalStatus || 'draft'] || 'Bozza'}
+                      </Badge>
+                      <Badge className="capitalize">{obj.period}</Badge>
                     </div>
                     <button className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-600">
                       {ICONS.More}
@@ -154,17 +164,17 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-medium text-gray-600 dark:text-slate-300">
-                        {obj.ownerId === currentUser.id ? 'You' : obj.ownerId}
+                        {obj.ownerId === currentUser.id ? 'Tu' : (obj.ownerName || obj.ownerId)}
                       </span>
                     </div>
-                    <div>Due: {new Date(obj.dueDate).toLocaleDateString()}</div>
+                    <div>Due: {obj.dueDate ? new Date(obj.dueDate).toLocaleDateString() : 'N/D'}</div>
                   </div>
 
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{obj.progress}%</span>
                     <ProgressBar
                         value={obj.progress}
-                        color={PROGRESS_COLORS[obj.status as keyof typeof PROGRESS_COLORS] ? `bg-[${PROGRESS_COLORS[obj.status as keyof typeof PROGRESS_COLORS]}]` : 'bg-blue-500'}
+                        color={PROGRESS_COLORS[obj.approvalStatus || 'draft'] ? `bg-[${PROGRESS_COLORS[obj.approvalStatus || 'draft']}]` : 'bg-blue-500'}
                       />
                   </div>
                 </div>
@@ -173,25 +183,28 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                 <div className="flex-1 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
                   <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-3">Key Results</h4>
                   <div className="space-y-3">
-                    {obj.keyResults.map((kr) => (
-                      <div key={kr.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div className="flex justify-between items-start mb-2">
-                          <p className="text-sm font-medium text-gray-800 dark:text-slate-200 line-clamp-1">{kr.description}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${STATUS_COLORS[kr.status]}`}>
-                            {kr.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
-                          <div className="flex-1 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5">
-                            <div
-                              className="bg-gray-400 dark:bg-gray-400 h-1.5 rounded-full"
-                              style={{ width: `${(kr.currentValue / kr.targetValue) * 100}%` }}
-                            ></div>
+                    {obj.keyResults.map((kr) => {
+                      const krProgress = kr.targetValue > 0 ? Math.round((kr.currentValue / kr.targetValue) * 100) : 0;
+                      return (
+                        <div key={kr.id} className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm font-medium text-gray-800 dark:text-slate-200 line-clamp-1">{kr.description}</p>
+                            <span className="text-xs font-bold text-gray-600 dark:text-slate-300">
+                              {krProgress}%
+                            </span>
                           </div>
-                          <span>{kr.currentValue} / {kr.targetValue} {kr.unit}</span>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
+                            <div className="flex-1 bg-slate-200 dark:bg-slate-600 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${krProgress >= 70 ? 'bg-green-500' : krProgress >= 40 ? 'bg-amber-500' : 'bg-slate-400'}`}
+                                style={{ width: `${krProgress}%` }}
+                              ></div>
+                            </div>
+                            <span>{kr.currentValue} / {kr.targetValue} {kr.unit}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {obj.keyResults.length === 0 && (
                       <p className="text-xs text-gray-400 dark:text-slate-500 italic">No key results defined.</p>
                     )}

@@ -187,7 +187,7 @@ export interface Objective {
   ownerName?: string;
   level: OKRLevel;
   period: string;
-  status: 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft';
+  status: 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft' | 'approved';
   progress: number;
   keyResults: KeyResult[];
   dueDate: string;
@@ -343,9 +343,9 @@ export const okrAPI = {
     return fetchAPI(`/okr/objectives/${objectiveId}/history`);
   },
 
-  // Get users for assignment
+  // Get users for assignment (accessible to lead and admin)
   async getUsers(): Promise<UserBasic[]> {
-    return fetchAPI<UserBasic[]>('/users');
+    return fetchAPI<UserBasic[]>('/okr/assignable-users');
   },
 
   // === HIERARCHY ===
@@ -407,6 +407,45 @@ export const okrAPI = {
   async activateObjective(objectiveId: string): Promise<Objective> {
     return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/activate`, {
       method: 'POST',
+    });
+  },
+
+  // Pause an active objective
+  async pauseObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/pause`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Resume a paused objective
+  async resumeObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Stop an objective permanently
+  async stopObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Archive a stopped objective
+  async archiveObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/archive`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  async revertToDraft(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/revert-to-draft`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
     });
   },
 
@@ -647,7 +686,7 @@ export interface CreateUserData {
   email: string;
   password: string;
   name: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'lead' | 'admin';
 }
 
 export interface UpdateUserData {

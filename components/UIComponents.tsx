@@ -11,7 +11,7 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, className = '', title, action, onClick }) => {
   return (
     <div
-      className={`bg-white dark:bg-slate-800/90 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 ${className}`}
+      className={`bg-white dark:bg-slate-800/90 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700/50 flex flex-col transition-colors duration-300 h-full ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

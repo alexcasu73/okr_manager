@@ -49,8 +49,25 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
   );
 };
 
+// Roles that each user type can assign
+const ASSIGNABLE_ROLES: Record<string, Array<{ value: string; label: string }>> = {
+  admin: [
+    { value: 'user', label: 'User' },
+    { value: 'lead', label: 'Lead' },
+    { value: 'admin', label: 'Admin' }
+  ],
+  lead: [
+    { value: 'user', label: 'User' },
+    { value: 'lead', label: 'Lead' }
+  ],
+  user: [
+    { value: 'user', label: 'User' }
+  ]
+};
+
 const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
+  const assignableRoles = ASSIGNABLE_ROLES[currentUser?.role || 'user'] || ASSIGNABLE_ROLES.user;
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -322,6 +339,7 @@ const UserManagementPage: React.FC = () => {
           >
             <option value="">Tutti i ruoli</option>
             <option value="admin">Admin</option>
+            <option value="lead">Lead</option>
             <option value="user">User</option>
           </select>
         </div>
@@ -329,7 +347,7 @@ const UserManagementPage: React.FC = () => {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3 text-red-700 dark:text-red-400">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <p>{error}</p>
         </div>
@@ -381,9 +399,11 @@ const UserManagementPage: React.FC = () => {
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                         user.role === 'admin'
                           ? 'border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/40'
+                          : user.role === 'lead'
+                          ? 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40'
                           : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700'
                       }`}>
-                        {user.role === 'admin' ? 'Admin' : 'User'}
+                        {user.role === 'admin' ? 'Admin' : user.role === 'lead' ? 'Lead' : 'User'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -446,7 +466,7 @@ const UserManagementPage: React.FC = () => {
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuovo Utente">
         <form onSubmit={handleCreateUser} className="space-y-4">
           {formError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               {formError}
             </div>
           )}
@@ -486,11 +506,12 @@ const UserManagementPage: React.FC = () => {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ruolo</label>
             <select
               value={createForm.role}
-              onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as 'user' | 'admin' })}
+              onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as 'user' | 'lead' | 'admin' })}
               className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              {assignableRoles.map(role => (
+                <option key={role.value} value={role.value}>{role.label}</option>
+              ))}
             </select>
           </div>
           <div className="flex gap-3 pt-2">
@@ -517,7 +538,7 @@ const UserManagementPage: React.FC = () => {
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Modifica Utente">
         <form onSubmit={handleEditUser} className="space-y-4">
           {formError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               {formError}
             </div>
           )}
@@ -547,10 +568,11 @@ const UserManagementPage: React.FC = () => {
               value={editForm.role}
               onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
               disabled={selectedUser?.id === currentUser?.id}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 disabled:opacity-50"
             >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              {assignableRoles.map(role => (
+                <option key={role.value} value={role.value}>{role.label}</option>
+              ))}
             </select>
             {selectedUser?.id === currentUser?.id && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Non puoi cambiare il tuo ruolo</p>
@@ -580,23 +602,23 @@ const UserManagementPage: React.FC = () => {
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Elimina Utente">
         <div className="space-y-4">
           {formError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               {formError}
             </div>
           )}
 
           {/* Success message for reassignment */}
           {reassignSuccess && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 flex items-center gap-2">
+            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
               <Check className="w-4 h-4" />
               Riassegnati {reassignSuccess.objectives} OKR e {reassignSuccess.teams} team
             </div>
           )}
 
           {/* Warning header */}
-          <div className="flex items-center gap-4 p-4 bg-red-50 rounded-xl">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+          <div className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <p className="font-medium text-slate-900 dark:text-slate-100">Sei sicuro?</p>
@@ -613,8 +635,8 @@ const UserManagementPage: React.FC = () => {
               <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Caricamento dati...</span>
             </div>
           ) : userDataCount && userDataCount.hasData ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-medium text-amber-800">
+            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                 Attenzione: questo utente ha dati associati che verranno eliminati!
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -725,15 +747,15 @@ const UserManagementPage: React.FC = () => {
       <Modal isOpen={showResetPasswordModal} onClose={() => { setShowResetPasswordModal(false); setTempPassword(null); }} title="Reset Password">
         {tempPassword ? (
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-xl">
-              <p className="text-sm text-green-800 mb-2">Password temporanea generata:</p>
+            <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-xl">
+              <p className="text-sm text-green-800 dark:text-green-300 mb-2">Password temporanea generata:</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 bg-white px-3 py-2 rounded-lg border border-green-200 font-mono text-sm">
+                <code className="flex-1 bg-white dark:bg-slate-700 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 font-mono text-sm text-slate-900 dark:text-slate-100">
                   {tempPassword}
                 </code>
                 <button
                   onClick={() => copyToClipboard(tempPassword)}
-                  className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                  className="p-2 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg"
                 >
                   {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                 </button>
@@ -752,7 +774,7 @@ const UserManagementPage: React.FC = () => {
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
                 {formError}
               </div>
             )}

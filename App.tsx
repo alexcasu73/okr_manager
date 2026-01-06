@@ -15,7 +15,7 @@ import OKRDetailModal from './components/OKRDetailModal';
 import LoginPage from './components/LoginPage';
 import InvitePage from './components/InvitePage';
 import { ViewMode } from './types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 
 // Simple URL-based routing
 function useRoute() {
@@ -42,6 +42,8 @@ const AppContent: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [okrRefreshTrigger, setOkrRefreshTrigger] = useState(0);
   const [selectedOKRId, setSelectedOKRId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Check for invitation route
   const inviteMatch = path.match(/^\/invite\/(.+)$/);
@@ -115,13 +117,32 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-slate-950 font-sans transition-colors duration-300 overflow-hidden">
-      <Sidebar currentView={currentView} onChangeView={setCurrentView} />
+      <Sidebar
+        currentView={currentView}
+        onChangeView={setCurrentView}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
 
-      <main className="flex-1 lg:ml-64 flex flex-col h-full overflow-hidden">
-        <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
+      <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} flex flex-col h-full overflow-hidden transition-all duration-300`}>
+        <div className="flex-1 p-4 md:p-6 flex flex-col overflow-hidden">
+          <div className="w-full flex-1 flex flex-col min-h-0">
+            {/* Mobile hamburger button */}
+            <div className="md:hidden flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">OKR Manager</h1>
+            </div>
             <Header onSelectOKR={(id) => setSelectedOKRId(id)} />
-            {renderContent()}
+            <div className="flex-1 min-h-0 overflow-auto">
+              {renderContent()}
+            </div>
           </div>
         </div>
       </main>

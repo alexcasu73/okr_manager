@@ -288,9 +288,9 @@ function calculateHealthMetrics(objective, keyResults) {
 // === OBJECTIVES ===
 
 export async function getObjectives(pool, filters = {}) {
-  const { ownerId, level, period, status, parentObjectiveId, approvalStatus } = filters;
+  const { ownerId, userId, level, period, status, parentObjectiveId, approvalStatus } = filters;
   let query = `
-    SELECT o.*,
+    SELECT DISTINCT o.*,
            u.name as owner_name,
            parent.title as parent_objective_title,
            t.name as team_name,
@@ -301,11 +301,19 @@ export async function getObjectives(pool, filters = {}) {
     LEFT JOIN objectives parent ON o.parent_objective_id = parent.id
     LEFT JOIN teams t ON o.team_id = t.id
     LEFT JOIN users approver ON o.approved_by = approver.id
+    LEFT JOIN objective_contributors oc ON o.id = oc.objective_id
     WHERE 1=1
   `;
   const params = [];
   let paramIndex = 1;
 
+  // userId filter: show objectives where user is owner OR contributor
+  if (userId) {
+    query += ` AND (o.owner_id = $${paramIndex} OR oc.user_id = $${paramIndex})`;
+    params.push(userId);
+    paramIndex++;
+  }
+  // ownerId filter: show only objectives where user is owner (legacy)
   if (ownerId) {
     query += ` AND o.owner_id = $${paramIndex++}`;
     params.push(ownerId);
@@ -478,6 +486,14 @@ async function validateParentChild(client, childLevel, parentId) {
 
 export async function updateObjective(pool, id, data, userId) {
   const { title, description, level, period, dueDate, status, parentObjectiveId, teamId } = data;
+  // Handle ownerId - convert empty string to null/undefined
+  const ownerId = data.ownerId && data.ownerId.trim() !== '' ? data.ownerId : null;
+
+  // Check if objective is in draft state - only draft allows editing
+  const currentStatus = await pool.query('SELECT approval_status FROM objectives WHERE id = $1', [id]);
+  if (currentStatus.rows.length > 0 && currentStatus.rows[0].approval_status !== 'draft') {
+    throw new Error('Non è possibile modificare un OKR: deve essere in stato bozza');
+  }
 
   // Validate parent-child if changing parentObjectiveId
   if (parentObjectiveId !== undefined && parentObjectiveId !== null) {
@@ -500,10 +516,11 @@ export async function updateObjective(pool, id, data, userId) {
          due_date = COALESCE($5, due_date),
          parent_objective_id = CASE WHEN $7::uuid IS NOT NULL OR $8 THEN $7 ELSE parent_objective_id END,
          team_id = CASE WHEN $9::uuid IS NOT NULL OR $10 THEN $9 ELSE team_id END,
+         owner_id = COALESCE($11, owner_id),
          updated_at = NOW()
      WHERE id = $6
      RETURNING *`,
-    [title, description, level, period, dueDate, id, parentObjectiveId, parentObjectiveId === null, teamId, teamId === null]
+    [title, description, level, period, dueDate, id, parentObjectiveId, parentObjectiveId === null, teamId, teamId === null, ownerId]
   );
 
   if (rows.length === 0) return null;
@@ -523,6 +540,13 @@ export async function updateObjective(pool, id, data, userId) {
 }
 
 export async function deleteObjective(pool, id) {
+  // Check if objective is in a locked state - block deletion (archived can be deleted)
+  const objectiveStatus = await pool.query('SELECT approval_status FROM objectives WHERE id = $1', [id]);
+  const lockedStates = ['active', 'paused', 'stopped']; // 'archived' can be deleted
+  if (objectiveStatus.rows.length > 0 && lockedStates.includes(objectiveStatus.rows[0].approval_status)) {
+    throw new Error('Non è possibile eliminare un OKR in questo stato');
+  }
+
   const { rowCount } = await pool.query(
     'DELETE FROM objectives WHERE id = $1',
     [id]
@@ -534,6 +558,12 @@ export async function deleteObjective(pool, id) {
 
 export async function createKeyResult(pool, objectiveId, data, userId) {
   const { description, metricType, startValue, targetValue, unit } = data;
+
+  // Check if objective is in draft state - only draft allows adding KRs
+  const objectiveStatus = await pool.query('SELECT approval_status FROM objectives WHERE id = $1', [objectiveId]);
+  if (objectiveStatus.rows.length > 0 && objectiveStatus.rows[0].approval_status !== 'draft') {
+    throw new Error('Non è possibile aggiungere Key Result: l\'OKR deve essere in stato bozza');
+  }
 
   const { rows } = await pool.query(
     `INSERT INTO key_results (objective_id, description, metric_type, start_value, target_value, current_value, unit)
@@ -557,6 +587,36 @@ export async function updateKeyResult(pool, id, data, userId) {
 
   const oldValue = current.rows[0].current_value;
   const objectiveId = current.rows[0].objective_id;
+
+  // Check if parent objective is in a locked state (only 'draft' allows full editing)
+  const objectiveStatus = await pool.query('SELECT approval_status FROM objectives WHERE id = $1', [objectiveId]);
+  const currentApprovalStatus = objectiveStatus.rows[0]?.approval_status;
+  const isDraft = currentApprovalStatus === 'draft';
+
+  // If not draft, check what changes are allowed
+  if (!isDraft) {
+    const hasStructuralChanges = description !== undefined || metricType !== undefined ||
+                                  startValue !== undefined || targetValue !== undefined || unit !== undefined;
+
+    // pending_review/approved/stopped/archived: block all changes
+    if (['pending_review', 'approved', 'stopped', 'archived'].includes(currentApprovalStatus)) {
+      if (hasStructuralChanges || currentValue !== undefined) {
+        throw new Error('Non è possibile modificare i Key Result di un OKR in questo stato.');
+      }
+    }
+
+    // paused: block all updates
+    if (currentApprovalStatus === 'paused') {
+      throw new Error('Non è possibile modificare i Key Result di un OKR in pausa.');
+    }
+
+    // active: only allow currentValue updates
+    if (currentApprovalStatus === 'active') {
+      if (hasStructuralChanges) {
+        throw new Error('Non è possibile modificare i Key Result di un OKR attivo. È consentito solo aggiornare il valore corrente.');
+      }
+    }
+  }
 
   const { rows } = await pool.query(
     `UPDATE key_results
@@ -594,6 +654,12 @@ export async function deleteKeyResult(pool, id) {
   if (current.rows.length === 0) return false;
 
   const objectiveId = current.rows[0].objective_id;
+
+  // Check if objective is in draft state - only draft allows deleting KRs
+  const objectiveStatus = await pool.query('SELECT approval_status FROM objectives WHERE id = $1', [objectiveId]);
+  if (objectiveStatus.rows.length > 0 && objectiveStatus.rows[0].approval_status !== 'draft') {
+    throw new Error('Non è possibile eliminare Key Result: l\'OKR deve essere in stato bozza');
+  }
 
   const { rowCount } = await pool.query('DELETE FROM key_results WHERE id = $1', [id]);
 
@@ -1009,10 +1075,11 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
       throw new Error(`Cannot approve: current status is ${rows[0].approval_status}`);
     }
 
-    // Update approval status
+    // Update approval status and status
     await client.query(
       `UPDATE objectives
        SET approval_status = 'approved',
+           status = 'approved',
            approved_by = $2,
            approved_at = NOW(),
            updated_at = NOW()
@@ -1111,10 +1178,11 @@ export async function activateObjective(pool, objectiveId, userId) {
       throw new Error(`Cannot activate: current status is ${rows[0].approval_status}`);
     }
 
-    // Update approval status
+    // Update approval status and status to on-track
     await client.query(
       `UPDATE objectives
        SET approval_status = 'active',
+           status = 'on-track',
            updated_at = NOW()
        WHERE id = $1`,
       [objectiveId]
@@ -1136,6 +1204,259 @@ export async function activateObjective(pool, objectiveId, userId) {
   } finally {
     client.release();
   }
+}
+
+/**
+ * Pause an active objective
+ * Can be resumed later
+ */
+export async function pauseObjective(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    if (rows[0].approval_status !== 'active') {
+      throw new Error(`Non è possibile mettere in pausa: stato attuale è ${rows[0].approval_status}`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'paused',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'paused', $2, $3)`,
+      [objectiveId, userId, comment || 'Messo in pausa']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Resume a paused objective
+ */
+export async function resumeObjective(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    if (rows[0].approval_status !== 'paused') {
+      throw new Error(`Non è possibile riprendere: stato attuale è ${rows[0].approval_status}`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'active',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'resumed', $2, $3)`,
+      [objectiveId, userId, comment || 'Ripreso']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Stop an objective permanently
+ * Cannot be resumed, but can be archived
+ */
+export async function stopObjective(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    const currentStatus = rows[0].approval_status;
+    if (!['active', 'paused'].includes(currentStatus)) {
+      throw new Error(`Non è possibile fermare: stato attuale è ${currentStatus}`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'stopped',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'stopped', $2, $3)`,
+      [objectiveId, userId, comment || 'Fermato definitivamente']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Archive a stopped objective
+ */
+export async function archiveObjective(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    if (rows[0].approval_status !== 'stopped') {
+      throw new Error(`Non è possibile archiviare: l'OKR deve essere prima fermato (stato attuale: ${rows[0].approval_status})`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'archived',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'archived', $2, $3)`,
+      [objectiveId, userId, comment || 'Archiviato']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function revertToDraft(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    if (rows[0].approval_status !== 'approved') {
+      throw new Error(`Non è possibile rimettere in bozza: l'OKR deve essere approvato (stato attuale: ${rows[0].approval_status})`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'draft',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'reverted_to_draft', $2, $3)`,
+      [objectiveId, userId, comment || 'Rimesso in bozza per modifiche']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Auto-stop objectives that have passed their due date
+ * Called periodically or on objective load
+ */
+export async function autoStopExpiredObjectives(pool) {
+  const { rows } = await pool.query(
+    `UPDATE objectives
+     SET approval_status = 'stopped',
+         updated_at = NOW()
+     WHERE approval_status = 'active'
+       AND due_date IS NOT NULL
+       AND due_date < CURRENT_DATE
+     RETURNING id`
+  );
+
+  // Log auto-stop in history (using system user or null)
+  for (const row of rows) {
+    await pool.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       SELECT $1, 'stopped', owner_id, 'Fermato automaticamente per scadenza'
+       FROM objectives WHERE id = $1`,
+      [row.id]
+    );
+  }
+
+  return rows.length;
 }
 
 /**

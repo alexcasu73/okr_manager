@@ -29,8 +29,26 @@ const emptyKeyResult: KeyResultFormData = {
   unit: ''
 };
 
+// Allowed levels based on user role
+const ALLOWED_LEVELS: Record<string, OKRLevel[]> = {
+  admin: ['company', 'team', 'individual'],
+  lead: ['team', 'individual'],
+  user: ['individual']
+};
+
+const LEVEL_LABELS: Record<OKRLevel, string> = {
+  company: 'Azienda',
+  department: 'Dipartimento',
+  team: 'Team',
+  individual: 'Individuale'
+};
+
 const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave }) => {
   const { user: currentUser } = useAuth();
+  const userRole = currentUser?.role || 'user';
+  const allowedLevels = ALLOWED_LEVELS[userRole] || ALLOWED_LEVELS.user;
+  const defaultLevel = allowedLevels[0];
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +59,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    level: 'company' as OKRLevel,
+    level: defaultLevel,
     period: 'Q1 2026',
     dueDate: '',
     ownerId: '',
@@ -124,7 +142,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     setFormData({
       title: '',
       description: '',
-      level: 'company',
+      level: defaultLevel,
       period: 'Q1 2026',
       dueDate: '',
       ownerId: currentUser?.id || '',
@@ -209,7 +227,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs">
+            <div className="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -251,9 +269,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                       onChange={e => setFormData({...formData, level: e.target.value as OKRLevel, parentObjectiveId: ''})}
                       disabled={isSubmitting}
                    >
-                     <option value="company">Azienda</option>
-                     <option value="team">Team</option>
-                     <option value="individual">Individuale</option>
+                     {allowedLevels.map(level => (
+                       <option key={level} value={level}>{LEVEL_LABELS[level]}</option>
+                     ))}
                    </select>
                 </div>
                 <div>
@@ -297,7 +315,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                       ) : (
                         availableParents.map(parent => (
                           <option key={parent.id} value={parent.id}>
-                            [{parent.level === 'company' ? 'Azienda' : 'Team'}] {parent.title} ({parent.period})
+                            [{LEVEL_LABELS[parent.level]}] {parent.title} ({parent.period})
                           </option>
                         ))
                       )}
@@ -318,26 +336,33 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Assegnato a *</label>
                   <div className="relative">
                     <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                    <select
-                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-8 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:12px_12px] bg-[position:right_10px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
-                      value={formData.ownerId}
-                      onChange={e => setFormData({...formData, ownerId: e.target.value})}
-                      disabled={isSubmitting || isLoadingUsers}
-                    >
-                      {isLoadingUsers ? (
-                        <option>Caricamento...</option>
-                      ) : users.length === 0 ? (
-                        <option value={currentUser?.id || ''}>
-                          {currentUser?.name || 'Utente corrente'}
-                        </option>
-                      ) : (
-                        users.map(u => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} {u.id === currentUser?.id ? '(tu)' : ''}
+                    {/* User can only assign to themselves, Lead/Admin can assign to anyone */}
+                    {userRole === 'user' ? (
+                      <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+                        {currentUser?.name || 'Tu'}
+                      </div>
+                    ) : (
+                      <select
+                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-8 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:12px_12px] bg-[position:right_10px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
+                        value={formData.ownerId}
+                        onChange={e => setFormData({...formData, ownerId: e.target.value})}
+                        disabled={isSubmitting || isLoadingUsers}
+                      >
+                        {isLoadingUsers ? (
+                          <option>Caricamento...</option>
+                        ) : users.length === 0 ? (
+                          <option value={currentUser?.id || ''}>
+                            {currentUser?.name || 'Utente corrente'}
                           </option>
-                        ))
-                      )}
-                    </select>
+                        ) : (
+                          users.map(u => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} {u.id === currentUser?.id ? '(tu)' : ''}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    )}
                   </div>
                 </div>
                 <div>

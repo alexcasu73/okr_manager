@@ -25,6 +25,12 @@ import {
   approveObjective,
   rejectObjective,
   activateObjective,
+  pauseObjective,
+  resumeObjective,
+  stopObjective,
+  archiveObjective,
+  revertToDraft,
+  autoStopExpiredObjectives,
   getApprovalHistory,
   getPendingApprovals,
   // Contributors functions
@@ -42,17 +48,54 @@ export function createOKRRoutes(config) {
   // All routes require authentication
   router.use(authMiddleware);
 
+  // Get users that can be assigned OKRs (accessible to lead and admin)
+  router.get('/assignable-users', async (req, res, next) => {
+    try {
+      const userRole = req.user.role || 'user';
+
+      // Only admin and lead can assign to others
+      if (userRole === 'user') {
+        // User can only see themselves
+        return res.json([{
+          id: req.user.id,
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role
+        }]);
+      }
+
+      if (userRole === 'lead') {
+        // Lead can only assign to users (not to other leads or admins)
+        const { rows } = await pool.query(
+          "SELECT id, name, email, role FROM users WHERE role = 'user' ORDER BY name"
+        );
+        res.json(rows);
+      } else {
+        // Admin can see all users
+        const { rows } = await pool.query(
+          'SELECT id, name, email, role FROM users ORDER BY name'
+        );
+        res.json(rows);
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // === OBJECTIVES ===
 
   // Get all objectives (with optional filters)
   router.get('/objectives', async (req, res, next) => {
     try {
+      // Auto-stop expired objectives before fetching
+      await autoStopExpiredObjectives(pool);
+
       const { level, period, status, mine } = req.query;
       const filters = { level, period, status };
 
-      // If 'mine' query param or user is not admin, filter by owner
+      // If 'mine' query param or user is not admin, filter by user (owner OR contributor)
       if (mine === 'true' || req.user.role !== 'admin') {
-        filters.ownerId = req.user.id;
+        filters.userId = req.user.id;
       }
 
       const objectives = await getObjectives(pool, filters);
@@ -78,6 +121,44 @@ export function createOKRRoutes(config) {
   // Create objective
   router.post('/objectives', async (req, res, next) => {
     try {
+      const { level, ownerId } = req.body;
+      const userRole = req.user.role || 'user';
+
+      // Permission check based on role and level
+      // Admin: can create all levels (company, team, individual)
+      // Lead: can create team and individual only
+      // User: can create individual only
+      const allowedLevels = {
+        admin: ['company', 'team', 'individual'],
+        lead: ['team', 'individual'],
+        user: ['individual']
+      };
+
+      const userAllowedLevels = allowedLevels[userRole] || allowedLevels.user;
+      if (!userAllowedLevels.includes(level)) {
+        return res.status(403).json({
+          error: `Non hai i permessi per creare obiettivi di livello "${level}". Livelli consentiti: ${userAllowedLevels.join(', ')}`
+        });
+      }
+
+      // Assignment permission check
+      // Admin: can assign to anyone
+      // Lead: can assign to anyone for individual OKRs
+      // User: can only assign to themselves
+      if (ownerId && ownerId !== req.user.id) {
+        if (userRole === 'user') {
+          return res.status(403).json({
+            error: 'Non hai i permessi per assegnare OKR ad altri utenti'
+          });
+        }
+        // Lead can only assign individual OKRs to others
+        if (userRole === 'lead' && level !== 'individual') {
+          return res.status(403).json({
+            error: 'Come Lead puoi assegnare ad altri utenti solo OKR individuali'
+          });
+        }
+      }
+
       const objective = await createObjective(pool, req.body, req.user.id);
       res.status(201).json(objective);
     } catch (error) {
@@ -93,14 +174,39 @@ export function createOKRRoutes(config) {
         return res.status(404).json({ error: 'Objective not found' });
       }
 
-      // Only owner or admin can update
-      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+      // Check if user is owner, admin, or contributor
+      const isOwner = existing.ownerId === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      const contributors = await getContributors(pool, req.params.id);
+      const isContributor = contributors.some(c => c.userId === req.user.id);
+
+      if (!isOwner && !isAdmin && !isContributor) {
         return res.status(403).json({ error: 'Not authorized to update this objective' });
+      }
+
+      // Check level permission if level is being changed
+      const { level } = req.body;
+      if (level) {
+        const userRole = req.user.role || 'user';
+        const allowedLevels = {
+          admin: ['company', 'team', 'individual'],
+          lead: ['team', 'individual'],
+          user: ['individual']
+        };
+        const userAllowedLevels = allowedLevels[userRole] || allowedLevels.user;
+        if (!userAllowedLevels.includes(level)) {
+          return res.status(403).json({
+            error: `Non hai i permessi per impostare il livello "${level}". Livelli consentiti: ${userAllowedLevels.join(', ')}`
+          });
+        }
       }
 
       const objective = await updateObjective(pool, req.params.id, req.body, req.user.id);
       res.json(objective);
     } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
       next(error);
     }
   });
@@ -113,14 +219,20 @@ export function createOKRRoutes(config) {
         return res.status(404).json({ error: 'Objective not found' });
       }
 
-      // Only owner or admin can delete
-      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+      // Only owner or admin can delete (contributors cannot)
+      const isOwner = existing.ownerId === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+
+      if (!isOwner && !isAdmin) {
         return res.status(403).json({ error: 'Not authorized to delete this objective' });
       }
 
       await deleteObjective(pool, req.params.id);
       res.status(204).send();
     } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
       next(error);
     }
   });
@@ -135,13 +247,22 @@ export function createOKRRoutes(config) {
         return res.status(404).json({ error: 'Objective not found' });
       }
 
-      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
+      // Check if user is owner, admin, or contributor
+      const isOwner = existing.ownerId === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      const contributors = await getContributors(pool, req.params.id);
+      const isContributor = contributors.some(c => c.userId === req.user.id);
+
+      if (!isOwner && !isAdmin && !isContributor) {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
       const keyResult = await createKeyResult(pool, req.params.id, req.body, req.user.id);
       res.status(201).json(keyResult);
     } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
       next(error);
     }
   });
@@ -155,6 +276,9 @@ export function createOKRRoutes(config) {
       }
       res.json(keyResult);
     } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
       next(error);
     }
   });
@@ -168,6 +292,9 @@ export function createOKRRoutes(config) {
       }
       res.status(204).send();
     } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
       next(error);
     }
   });
@@ -333,23 +460,148 @@ export function createOKRRoutes(config) {
     }
   });
 
-  // Activate approved objective
+  // Activate approved objective (admin only)
   router.post('/objectives/:id/activate', async (req, res, next) => {
     try {
+      // Only admin can activate
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono attivare gli OKR' });
+      }
+
       const existing = await getObjectiveById(pool, req.params.id);
       if (!existing) {
         return res.status(404).json({ error: 'Objective not found' });
-      }
-
-      // Owner or admin can activate
-      if (existing.ownerId !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Not authorized to activate this objective' });
       }
 
       const objective = await activateObjective(pool, req.params.id, req.user.id);
       res.json(objective);
     } catch (error) {
       if (error.message.includes('Cannot activate')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Pause an active objective (admin only)
+  router.post('/objectives/:id/pause', async (req, res, next) => {
+    try {
+      // Only admin can pause
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono sospendere gli OKR' });
+      }
+
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      const objective = await pauseObjective(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Resume a paused objective (admin only)
+  router.post('/objectives/:id/resume', async (req, res, next) => {
+    try {
+      // Only admin can resume
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono riprendere gli OKR' });
+      }
+
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      const objective = await resumeObjective(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Stop an objective permanently (admin only)
+  router.post('/objectives/:id/stop', async (req, res, next) => {
+    try {
+      // Only admin can stop
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono fermare gli OKR' });
+      }
+
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      const objective = await stopObjective(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Archive a stopped objective
+  router.post('/objectives/:id/archive', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Check if user is owner, admin, or contributor
+      const isOwner = existing.ownerId === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      const contributors = await getContributors(pool, req.params.id);
+      const isContributor = contributors.some(c => c.userId === req.user.id);
+
+      if (!isOwner && !isAdmin && !isContributor) {
+        return res.status(403).json({ error: 'Not authorized to archive this objective' });
+      }
+
+      const objective = await archiveObjective(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Revert an objective to draft (from pending_review or approved)
+  router.post('/objectives/:id/revert-to-draft', async (req, res, next) => {
+    try {
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      // Check if user is owner, admin, or contributor
+      const isOwner = existing.ownerId === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      const contributors = await getContributors(pool, req.params.id);
+      const isContributor = contributors.some(c => c.userId === req.user.id);
+
+      if (!isOwner && !isAdmin && !isContributor) {
+        return res.status(403).json({ error: 'Not authorized to revert this objective' });
+      }
+
+      const objective = await revertToDraft(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
         return res.status(400).json({ error: error.message });
       }
       next(error);

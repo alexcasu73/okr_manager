@@ -131,16 +131,16 @@ const ProfilePage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    // Validate file type (some browsers report jpg as image/jpg instead of image/jpeg)
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setImageError('Formato non supportato. Usa JPEG, PNG, GIF o WebP');
       return;
     }
 
-    // Validate file size (500KB)
-    if (file.size > 500 * 1024) {
-      setImageError('Immagine troppo grande. Massimo 500KB');
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setImageError('Immagine troppo grande. Massimo 2MB');
       return;
     }
 
@@ -257,7 +257,7 @@ const ProfilePage: React.FC = () => {
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">JPEG, PNG, GIF o WebP. Max 500KB.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">JPEG, PNG, GIF o WebP. Max 2MB.</p>
             {imageError && (
               <p className="text-xs text-red-600">{imageError}</p>
             )}
@@ -266,7 +266,7 @@ const ProfilePage: React.FC = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,.jpg,.jpeg"
             onChange={handleImageSelect}
             className="hidden"
           />
@@ -279,13 +279,13 @@ const ProfilePage: React.FC = () => {
 
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           {profileError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 flex items-center gap-2">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               {profileError}
             </div>
           )}
           {profileSuccess && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 flex items-center gap-2">
+            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
               <Check className="w-4 h-4 flex-shrink-0" />
               Profilo aggiornato con successo
             </div>
@@ -340,13 +340,13 @@ const ProfilePage: React.FC = () => {
 
         <form onSubmit={handleChangePassword} className="space-y-4">
           {passwordError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 flex items-center gap-2">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               {passwordError}
             </div>
           )}
           {passwordSuccess && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 flex items-center gap-2">
+            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
               <Check className="w-4 h-4 flex-shrink-0" />
               Password cambiata con successo
             </div>
@@ -444,14 +444,14 @@ const ProfilePage: React.FC = () => {
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Elimina Account">
         <form onSubmit={handleDeleteAccount} className="space-y-4">
           {deleteError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               {deleteError}
             </div>
           )}
 
-          <div className="flex items-center gap-4 p-4 bg-red-50 rounded-xl">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+          <div className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <p className="font-medium text-slate-900 dark:text-slate-100">Sei sicuro?</p>

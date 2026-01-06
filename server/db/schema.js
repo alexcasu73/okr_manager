@@ -115,7 +115,7 @@ export async function initializeOKRSchema(pool) {
       CREATE TABLE IF NOT EXISTS approval_history (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         objective_id UUID NOT NULL REFERENCES objectives(id) ON DELETE CASCADE,
-        action VARCHAR(50) NOT NULL CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated')),
+        action VARCHAR(50) NOT NULL CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated', 'paused', 'resumed', 'stopped', 'archived', 'reverted_to_draft')),
         performed_by UUID NOT NULL REFERENCES users(id),
         comment TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -166,7 +166,7 @@ async function migrateHierarchyFields(pool) {
     const objectiveColumns = [
       { name: 'parent_objective_id', type: 'UUID REFERENCES objectives(id) ON DELETE SET NULL' },
       { name: 'team_id', type: 'UUID REFERENCES teams(id) ON DELETE SET NULL' },
-      { name: 'approval_status', type: "VARCHAR(50) DEFAULT 'draft' CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active'))" },
+      { name: 'approval_status', type: "VARCHAR(50) DEFAULT 'draft' CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active', 'paused', 'stopped', 'archived'))" },
       { name: 'approved_by', type: 'UUID REFERENCES users(id)' },
       { name: 'approved_at', type: 'TIMESTAMP WITH TIME ZONE' }
     ];
@@ -221,5 +221,18 @@ async function createHierarchyIndexes(pool) {
   } catch (error) {
     console.error('Index creation error:', error.message);
     // Non-fatal: indexes may already exist or columns may not exist
+  }
+
+  // Update approval_history action constraint to include reverted_to_draft
+  try {
+    await pool.query(`
+      ALTER TABLE approval_history DROP CONSTRAINT IF EXISTS approval_history_action_check;
+      ALTER TABLE approval_history ADD CONSTRAINT approval_history_action_check
+        CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated', 'paused', 'resumed', 'stopped', 'archived', 'reverted_to_draft'));
+    `);
+    console.log('Updated approval_history action constraint');
+  } catch (error) {
+    console.error('Constraint update error:', error.message);
+    // Non-fatal: constraint may already be correct
   }
 }

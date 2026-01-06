@@ -5,10 +5,24 @@ import {
   Loader2, AlertCircle, X, Edit2, Save, Trash2,
   Target, Calendar, User, TrendingUp, ChevronDown, ChevronUp, Plus,
   GitBranch, ChevronRight, ExternalLink, Send, CheckCircle, XCircle, Play, Clock, History,
-  Users, UserPlus, UserMinus, Search
+  Users, UserPlus, UserMinus, Search, Pause, Square, Archive, RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { STATUS_COLORS } from '../constants';
+
+// Allowed OKR levels based on user role
+type OKRLevel = 'company' | 'team' | 'individual';
+const ALLOWED_LEVELS: Record<string, OKRLevel[]> = {
+  admin: ['company', 'team', 'individual'],
+  lead: ['team', 'individual'],
+  user: ['individual']
+};
+
+const LEVEL_LABELS: Record<OKRLevel, string> = {
+  company: 'Azienda',
+  team: 'Team',
+  individual: 'Individuale'
+};
 
 interface OKRDetailModalProps {
   isOpen: boolean;
@@ -44,6 +58,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeleteKRModal, setShowDeleteKRModal] = useState<string | null>(null);
+  const [editingKR, setEditingKR] = useState<string | null>(null);
+  const [editKRForm, setEditKRForm] = useState({ description: '', metricType: 'number' as string, targetValue: 0, startValue: 0, unit: '' });
   const [showRemoveContributorModal, setShowRemoveContributorModal] = useState<string | null>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [isLoadingContributors, setIsLoadingContributors] = useState(false);
@@ -77,6 +93,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
       setShowRejectModal(false);
       setShowDeleteModal(false);
       setShowDeleteKRModal(null);
+      setEditingKR(null);
+      setEditKRForm({ description: '', metricType: 'number', targetValue: 0, startValue: 0, unit: '' });
       setShowRemoveContributorModal(null);
       setContributors([]);
       setShowAddContributor(false);
@@ -218,6 +236,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
         await loadApprovalHistory();
       }
       onUpdate();
+      // Dispatch event to refresh notifications for approvers
+      window.dispatchEvent(new CustomEvent('okr-updated'));
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Errore nell\'invio per approvazione');
@@ -240,6 +260,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
         await loadApprovalHistory();
       }
       onUpdate();
+      // Dispatch event to refresh notifications
+      window.dispatchEvent(new CustomEvent('okr-updated'));
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Errore nell\'approvazione');
@@ -264,6 +286,7 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
         await loadApprovalHistory();
       }
       onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Errore nel rifiuto');
@@ -286,9 +309,125 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
         await loadApprovalHistory();
       }
       onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Errore nell\'attivazione');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handlePause = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.pauseObjective(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nella pausa');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleResume = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.resumeObjective(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nel ripristino');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleStop = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.stopObjective(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nell\'arresto');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.archiveObjective(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nell\'archiviazione');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleRevertToDraft = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.revertToDraft(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nel ripristino a bozza');
       }
     } finally {
       if (isMounted.current) {
@@ -378,14 +517,15 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
     setIsSaving(true);
     setError(null);
     try {
-      await okrAPI.updateObjective(objectiveId, {
+      const updateData = {
         title: editForm.title,
         description: editForm.description || undefined,
         level: editForm.level,
         period: editForm.period,
         dueDate: editForm.dueDate || undefined,
-        status: editForm.status
-      });
+        ownerId: editForm.ownerId
+      };
+      await okrAPI.updateObjective(objectiveId, updateData);
       if (isMounted.current) {
         setIsEditing(false);
         await loadObjective();
@@ -445,6 +585,52 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Errore nell\'eliminazione del Key Result');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleStartEditKR = (kr: KeyResult) => {
+    setEditingKR(kr.id);
+    setEditKRForm({
+      description: kr.description,
+      metricType: kr.metricType,
+      targetValue: kr.targetValue,
+      startValue: kr.startValue,
+      unit: kr.unit
+    });
+  };
+
+  const handleCancelEditKR = () => {
+    setEditingKR(null);
+    setEditKRForm({ description: '', metricType: 'number', targetValue: 0, startValue: 0, unit: '' });
+  };
+
+  const handleSaveEditKR = async () => {
+    if (!editingKR || isSaving || !editKRForm.description.trim()) return;
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.updateKeyResult(editingKR, {
+        description: editKRForm.description,
+        metricType: editKRForm.metricType,
+        targetValue: editKRForm.targetValue,
+        startValue: editKRForm.startValue,
+        unit: editKRForm.unit
+      });
+      if (isMounted.current) {
+        setEditingKR(null);
+        setEditKRForm({ description: '', metricType: 'number', targetValue: 0, startValue: 0, unit: '' });
+        await loadObjective();
+      }
+      onUpdate();
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nella modifica del Key Result');
       }
     } finally {
       if (isMounted.current) {
@@ -535,37 +721,65 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
     individual: 'Individuale'
   };
 
+  // statusLabels ora usa i valori di approvalStatus per uniformità
   const statusLabels: Record<string, string> = {
     draft: 'Bozza',
-    'on-track': 'In linea',
-    'at-risk': 'A rischio',
-    'off-track': 'Fuori strada',
-    completed: 'Completato'
+    pending_review: 'In revisione',
+    approved: 'Approvato',
+    active: 'Attivo',
+    paused: 'In pausa',
+    stopped: 'Fermato',
+    archived: 'Archiviato'
   };
 
   const approvalStatusLabels: Record<string, string> = {
     draft: 'Bozza',
-    pending_review: 'In Revisione',
+    pending_review: 'In revisione',
     approved: 'Approvato',
-    active: 'Attivo'
+    active: 'Attivo',
+    paused: 'In pausa',
+    stopped: 'Fermato',
+    archived: 'Archiviato'
   };
 
   const approvalStatusColors: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
     pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+    active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    paused: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    stopped: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    archived: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
   };
 
   const approvalActionLabels: Record<string, string> = {
     submitted: 'Inviato per revisione',
     approved: 'Approvato',
     rejected: 'Rifiutato',
-    activated: 'Attivato'
+    activated: 'Attivato',
+    paused: 'Messo in pausa',
+    resumed: 'Ripreso',
+    stopped: 'Fermato',
+    archived: 'Archiviato',
+    reverted_to_draft: 'Rimesso in bozza'
   };
 
   const isOwner = currentUser?.id === objective?.ownerId;
   const isAdmin = currentUser?.role === 'admin';
+  const isContributor = contributors.some(c => c.userId === currentUser?.id);
+  // Contributors have the same permissions as the owner (except delete)
+  const hasPermission = isOwner || isAdmin || isContributor;
+
+  // OKR is only editable in draft state
+  const isLocked = objective ? objective.approvalStatus !== 'draft' : false;
+  const isEditable = hasPermission && !isLocked;
+  // Only owner/admin can delete (not contributors). Only draft or archived can be deleted.
+  const isArchived = objective?.approvalStatus === 'archived';
+  const isDraft = objective?.approvalStatus === 'draft';
+  const canDelete = (isOwner || isAdmin) && (isDraft || isArchived);
+  // Can update KR currentValue only when active (not paused/stopped/archived)
+  const valueUpdateStates = ['active'];
+  const canUpdateValue = hasPermission && objective ? valueUpdateStates.includes(objective.approvalStatus || '') : false;
 
   const calculateKRProgress = (kr: KeyResult) => {
     const range = kr.targetValue - kr.startValue;
@@ -582,24 +796,24 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
             {isEditing ? 'Modifica Obiettivo' : 'Dettaglio Obiettivo'}
           </h2>
           <div className="flex items-center gap-2">
-            {!isEditing && objective && (
-              <>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 transition-colors"
-                  title="Modifica"
-                >
-                  <Edit2 className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleDeleteObjective}
-                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors"
-                  title="Elimina"
-                  disabled={isSaving}
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </>
+            {!isEditing && objective && isEditable && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 transition-colors"
+                title="Modifica"
+              >
+                <Edit2 className="w-5 h-5" />
+              </button>
+            )}
+            {!isEditing && objective && canDelete && (
+              <button
+                onClick={handleDeleteObjective}
+                className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors"
+                title="Elimina"
+                disabled={isSaving}
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             )}
             <button
               onClick={handleClose}
@@ -614,7 +828,7 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm mb-4">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm mb-4">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -651,6 +865,25 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                     />
                   </div>
 
+                  {/* Owner selection - Admin can always change, Lead can change for individual OKRs */}
+                  {(currentUser?.role === 'admin' || (currentUser?.role === 'lead' && editForm.level === 'individual')) && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Assegnato a</label>
+                      <select
+                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 pl-4 pr-10 py-2.5 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500"
+                        value={editForm.ownerId}
+                        onChange={e => setEditForm({...editForm, ownerId: e.target.value})}
+                        disabled={isSaving}
+                      >
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} {u.id === currentUser?.id ? '(tu)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Livello</label>
@@ -660,25 +893,17 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                         onChange={e => setEditForm({...editForm, level: e.target.value as typeof editForm.level})}
                         disabled={isSaving}
                       >
-                        <option value="company">Azienda</option>
-                        <option value="team">Team</option>
-                        <option value="individual">Individuale</option>
+                        {(ALLOWED_LEVELS[currentUser?.role || 'user'] || ALLOWED_LEVELS.user).map(level => (
+                          <option key={level} value={level}>{LEVEL_LABELS[level]}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stato</label>
-                      <select
-                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 pl-4 pr-12 py-2.5 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
-                        value={editForm.status}
-                        onChange={e => setEditForm({...editForm, status: e.target.value as typeof editForm.status})}
-                        disabled={isSaving}
-                      >
-                        <option value="draft">Bozza</option>
-                        <option value="on-track">In linea</option>
-                        <option value="at-risk">A rischio</option>
-                        <option value="off-track">Fuori strada</option>
-                        <option value="completed">Completato</option>
-                      </select>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stato Approvazione</label>
+                      <div className={`w-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 px-4 py-2.5`}>
+                        {statusLabels[objective?.approvalStatus || 'draft'] || 'Bozza'}
+                        <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">(gestito dal workflow)</span>
+                      </div>
                     </div>
                   </div>
 
@@ -770,8 +995,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                       <User className="w-4 h-4" />
                       <span>{objective.ownerName || 'Non assegnato'}</span>
                     </div>
-                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLORS[objective.status] || 'bg-gray-100 text-slate-600 dark:text-slate-400'}`}>
-                      {statusLabels[objective.status] || objective.status}
+                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLORS[objective.approvalStatus || 'draft'] || 'bg-gray-100 text-slate-600 dark:text-slate-400'}`}>
+                      {statusLabels[objective.approvalStatus || 'draft'] || objective.approvalStatus}
                     </span>
                   </div>
 
@@ -864,15 +1089,96 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                         </>
                       )}
 
-                      {/* Owner/Admin can activate if approved */}
-                      {(isOwner || isAdmin) && objective.approvalStatus === 'approved' && (
+                      {/* Only Admin can activate if approved */}
+                      {objective.approvalStatus === 'approved' && (
+                        <>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              onClick={handleActivate}
+                              disabled={isSaving}
+                            >
+                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+                              Attiva
+                            </Button>
+                          )}
+                          {hasPermission && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={handleRevertToDraft}
+                              disabled={isSaving}
+                            >
+                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1" />}
+                              Modifica
+                            </Button>
+                          )}
+                        </>
+                      )}
+
+
+                      {/* Only Admin can pause/stop if active */}
+                      {isAdmin && objective.approvalStatus === 'active' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={handlePause}
+                            disabled={isSaving}
+                            className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/30"
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pause className="w-4 h-4 mr-1" />}
+                            Pausa
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleStop}
+                            disabled={isSaving}
+                            className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4 mr-1" />}
+                            Ferma
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Only Admin can resume/stop if paused */}
+                      {isAdmin && objective.approvalStatus === 'paused' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={handleResume}
+                            disabled={isSaving}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
+                            Riprendi
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleStop}
+                            disabled={isSaving}
+                            className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/30"
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4 mr-1" />}
+                            Ferma
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Owner/Admin/Contributor can archive if stopped */}
+                      {hasPermission && objective.approvalStatus === 'stopped' && (
                         <Button
                           size="sm"
-                          onClick={handleActivate}
+                          variant="secondary"
+                          onClick={handleArchive}
                           disabled={isSaving}
+                          className="text-gray-600 border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                         >
-                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
-                          Attiva
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4 mr-1" />}
+                          Archivia
                         </Button>
                       )}
 
@@ -907,7 +1213,10 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                 <div className={`w-2 h-2 rounded-full mt-1.5 ${
                                   item.action === 'approved' ? 'bg-green-500' :
                                   item.action === 'rejected' ? 'bg-red-500' :
-                                  item.action === 'activated' ? 'bg-blue-500' :
+                                  item.action === 'activated' || item.action === 'resumed' ? 'bg-blue-500' :
+                                  item.action === 'paused' ? 'bg-orange-500' :
+                                  item.action === 'stopped' ? 'bg-red-500' :
+                                  item.action === 'archived' ? 'bg-gray-500' :
                                   'bg-amber-500'
                                 }`} />
                                 <div className="flex-1">
@@ -1095,7 +1404,7 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                       <TrendingUp className="w-5 h-5" />
                       Key Results
                     </h4>
-                    {!isAddingKR && (
+                    {!isAddingKR && isEditable && (
                       <Button
                         variant="secondary"
                         size="sm"
@@ -1238,14 +1547,16 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                   {objective.keyResults.length === 0 && !isAddingKR ? (
                     <div className="text-center py-8 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
                       <p className="text-slate-400 dark:text-slate-500 mb-3">Nessun Key Result definito</p>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setIsAddingKR(true)}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Aggiungi il primo Key Result
-                      </Button>
+                      {isEditable && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setIsAddingKR(true)}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Aggiungi il primo Key Result
+                        </Button>
+                      )}
                     </div>
                   ) : objective.keyResults.length > 0 ? (
                     <div className="space-y-3">
@@ -1256,13 +1567,13 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                         return (
                           <div key={kr.id} className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl overflow-hidden">
                             <button
-                              className="w-full p-4 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+                              className="group w-full p-4 text-left flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-600/80 transition-colors"
                               onClick={() => setExpandedKR(isExpanded ? null : kr.id)}
                             >
                               <div className="flex-1">
                                 <p className="font-medium text-slate-900 dark:text-slate-100">{kr.description}</p>
                                 <div className="flex items-center gap-4 mt-2">
-                                  <div className="flex-1 max-w-xs bg-slate-200 dark:bg-slate-600 rounded-full h-2">
+                                  <div className="flex-1 max-w-xs bg-slate-200 dark:bg-slate-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-500/70 rounded-full h-2 transition-colors">
                                     <div
                                       className={`h-2 rounded-full transition-all ${
                                         progress >= 100 ? 'bg-green-500' :
@@ -1286,56 +1597,159 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
 
                             {isExpanded && (
                               <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-600 pt-4">
-                                <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-                                  <div>
-                                    <span className="text-slate-500 dark:text-slate-400">Valore Iniziale</span>
-                                    <p className="font-medium">{kr.startValue} {kr.unit}</p>
+                                {editingKR === kr.id ? (
+                                  /* Edit KR Form */
+                                  <div className="space-y-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrizione</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={editKRForm.description}
+                                        onChange={e => setEditKRForm({...editKRForm, description: e.target.value})}
+                                        disabled={isSaving}
+                                      />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo Metrica</label>
+                                        <select
+                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 pl-4 pr-12 py-2 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
+                                          value={editKRForm.metricType}
+                                          onChange={e => setEditKRForm({...editKRForm, metricType: e.target.value})}
+                                          disabled={isSaving}
+                                        >
+                                          <option value="number">Numero</option>
+                                          <option value="percentage">Percentuale</option>
+                                          <option value="currency">Valuta</option>
+                                          <option value="boolean">Sì/No</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unità</label>
+                                        <input
+                                          type="text"
+                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                          value={editKRForm.unit}
+                                          onChange={e => setEditKRForm({...editKRForm, unit: e.target.value})}
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Iniziale</label>
+                                        <input
+                                          type="number"
+                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                          value={editKRForm.startValue}
+                                          onChange={e => setEditKRForm({...editKRForm, startValue: parseFloat(e.target.value) || 0})}
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Target</label>
+                                        <input
+                                          type="number"
+                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                          value={editKRForm.targetValue}
+                                          onChange={e => setEditKRForm({...editKRForm, targetValue: parseFloat(e.target.value) || 0})}
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                      <Button variant="ghost" onClick={handleCancelEditKR} disabled={isSaving}>
+                                        Annulla
+                                      </Button>
+                                      <Button onClick={handleSaveEditKR} disabled={isSaving || !editKRForm.description.trim()}>
+                                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salva'}
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <span className="text-slate-500 dark:text-slate-400">Valore Target</span>
-                                    <p className="font-medium">{kr.targetValue} {kr.unit}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-slate-500 dark:text-slate-400">Tipo Metrica</span>
-                                    <p className="font-medium capitalize">{kr.metricType}</p>
-                                  </div>
-                                </div>
+                                ) : (
+                                  /* Display KR */
+                                  <>
+                                    <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+                                      <div>
+                                        <span className="text-slate-500 dark:text-slate-400">Valore Iniziale</span>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100">{kr.startValue} {kr.unit}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500 dark:text-slate-400">Valore Target</span>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100">{kr.targetValue} {kr.unit}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-500 dark:text-slate-400">Tipo Metrica</span>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100 capitalize">{kr.metricType}</p>
+                                      </div>
+                                    </div>
 
-                                <div className="flex items-end gap-3">
-                                  <div className="flex-1">
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                      Aggiorna Valore Attuale
-                                    </label>
-                                    <input
-                                      type="number"
-                                      className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                      value={krUpdates[kr.id] ?? kr.currentValue}
-                                      onChange={e => setKrUpdates({
-                                        ...krUpdates,
-                                        [kr.id]: parseFloat(e.target.value) || 0
-                                      })}
-                                      disabled={isSaving}
-                                    />
-                                  </div>
-                                  <Button
-                                    onClick={() => handleUpdateKR(kr.id)}
-                                    disabled={isSaving || krUpdates[kr.id] === kr.currentValue}
-                                  >
-                                    {isSaving ? (
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                      'Aggiorna'
+                                    {canUpdateValue && (
+                                      <div className="flex items-end gap-3">
+                                        <div className="flex-1">
+                                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Aggiorna Valore Attuale
+                                          </label>
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={krUpdates[kr.id] !== undefined ? krUpdates[kr.id] : kr.currentValue}
+                                            onChange={e => {
+                                              const val = e.target.value;
+                                              if (val === '' || val === '-') {
+                                                setKrUpdates({ ...krUpdates, [kr.id]: val as any });
+                                              } else {
+                                                const num = parseFloat(val);
+                                                if (!isNaN(num)) {
+                                                  setKrUpdates({ ...krUpdates, [kr.id]: num });
+                                                }
+                                              }
+                                            }}
+                                            onBlur={e => {
+                                              const val = e.target.value;
+                                              if (val === '' || val === '-') {
+                                                setKrUpdates({ ...krUpdates, [kr.id]: 0 });
+                                              }
+                                            }}
+                                            disabled={isSaving}
+                                          />
+                                        </div>
+                                        <Button
+                                          onClick={() => handleUpdateKR(kr.id)}
+                                          disabled={isSaving || krUpdates[kr.id] === kr.currentValue}
+                                        >
+                                          {isSaving ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            'Aggiorna'
+                                          )}
+                                        </Button>
+                                      </div>
                                     )}
-                                  </Button>
-                                  <button
-                                    onClick={() => handleDeleteKR(kr.id)}
-                                    className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                                    title="Elimina Key Result"
-                                    disabled={isSaving}
-                                  >
-                                    <Trash2 className="w-5 h-5" />
-                                  </button>
-                                </div>
+                                    {isEditable && (
+                                      <div className="flex justify-end mt-3 gap-2">
+                                        <button
+                                          onClick={() => handleStartEditKR(kr)}
+                                          className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                          title="Modifica Key Result"
+                                          disabled={isSaving}
+                                        >
+                                          <Edit2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteKR(kr.id)}
+                                          className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                                          title="Elimina Key Result"
+                                          disabled={isSaving}
+                                        >
+                                          <Trash2 className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1371,8 +1785,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                 <span className="text-xs font-medium px-2 py-0.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded">
                                   {levelLabels[child.level] || child.level}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[child.status] || 'bg-gray-100 text-slate-600'}`}>
-                                  {statusLabels[child.status] || child.status}
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[child.approvalStatus || 'draft'] || 'bg-gray-100 text-slate-600'}`}>
+                                  {statusLabels[child.approvalStatus || 'draft'] || child.approvalStatus}
                                 </span>
                               </div>
                               <h5 className="font-medium text-slate-900 dark:text-slate-100 truncate">
@@ -1431,6 +1845,19 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                   {/* Add Contributor Form */}
                   {showAddContributor && (
                     <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-slate-900 dark:text-slate-100">Aggiungi Contributore</h5>
+                        <button
+                          onClick={() => {
+                            setShowAddContributor(false);
+                            setContributorSearch('');
+                          }}
+                          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                          title="Chiudi"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ProgressBar, Tooltip as UITooltip } from './UIComponents';
-import { ICONS, STATUS_COLORS } from '../constants';
+import { ICONS, STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { okrAPI, Objective, KeyResult, HealthMetrics } from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { User } from '../types';
@@ -41,27 +41,27 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     const avgProgress = total > 0
       ? Math.round(objectives.reduce((acc, obj) => acc + obj.progress, 0) / total)
       : 0;
-    const atRisk = objectives.filter(o => o.status === 'at-risk' || o.status === 'off-track').length;
-    const completed = objectives.filter(o => o.status === 'completed').length;
-    const onTrack = objectives.filter(o => o.status === 'on-track').length;
-    const draft = objectives.filter(o => o.status === 'draft').length;
+    const draft = objectives.filter(o => o.approvalStatus === 'draft').length;
+    const pendingReview = objectives.filter(o => o.approvalStatus === 'pending_review').length;
+    const approved = objectives.filter(o => o.approvalStatus === 'approved').length;
+    const active = objectives.filter(o => o.approvalStatus === 'active').length;
 
-    return { total, avgProgress, atRisk, completed, onTrack, draft };
+    return { total, avgProgress, draft, pendingReview, approved, active };
   }, [objectives]);
 
-  // Status distribution for pie chart
+  // Status distribution for pie chart (based on approvalStatus)
   const statusDistribution = useMemo(() => {
     const counts: Record<string, number> = {};
     objectives.forEach(obj => {
-      counts[obj.status] = (counts[obj.status] || 0) + 1;
+      const status = obj.approvalStatus || 'draft';
+      counts[status] = (counts[status] || 0) + 1;
     });
 
     return [
-      { name: 'In Linea', value: counts['on-track'] || 0, color: '#10B981' },
-      { name: 'A Rischio', value: counts['at-risk'] || 0, color: '#F59E0B' },
-      { name: 'Fuori Strada', value: counts['off-track'] || 0, color: '#EF4444' },
-      { name: 'Completati', value: counts['completed'] || 0, color: '#3B82F6' },
       { name: 'Bozza', value: counts['draft'] || 0, color: '#9CA3AF' },
+      { name: 'In Revisione', value: counts['pending_review'] || 0, color: '#F59E0B' },
+      { name: 'Approvato', value: counts['approved'] || 0, color: '#8B5CF6' },
+      { name: 'Attivo', value: counts['active'] || 0, color: '#10B981' },
     ].filter(item => item.value > 0);
   }, [objectives]);
 
@@ -87,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
     return objectives
       .filter(obj => {
-        if (!obj.dueDate || obj.status === 'completed') return false;
+        if (!obj.dueDate || obj.progress >= 100) return false;
         const dueDate = new Date(obj.dueDate);
         return dueDate >= now && dueDate <= twoWeeksFromNow;
       })
@@ -100,15 +100,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     const allKRs: (KeyResult & { objectiveTitle: string })[] = [];
 
     objectives.forEach(obj => {
-      if (obj.status === 'completed') return;
+      if (obj.progress >= 100) return;
 
       obj.keyResults.forEach(kr => {
         const progress = kr.targetValue > kr.startValue
           ? ((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100
           : 0;
 
-        // KR is critical if progress < 30% or status is off-track/at-risk
-        if (progress < 30 || kr.status === 'off-track' || kr.status === 'at-risk') {
+        // KR is critical if progress < 30%
+        if (progress < 30) {
           allKRs.push({
             ...kr,
             objectiveTitle: obj.title
@@ -135,7 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   const needsAttention = useMemo(() => {
     return objectives
       .filter(obj => {
-        if (obj.status === 'completed') return false;
+        if (obj.progress >= 100) return false;
         const metrics = obj.healthMetrics;
         if (!metrics) return false;
         return metrics.riskLevel === 'medium' ||
@@ -155,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   // Pace statistics
   const paceStats = useMemo(() => {
     const withMetrics = objectives.filter(obj =>
-      obj.healthMetrics && obj.status !== 'completed' && obj.status !== 'draft'
+      obj.healthMetrics && obj.progress < 100 && obj.approvalStatus === 'active'
     );
 
     if (withMetrics.length === 0) return { avgPaceRatio: 1, onPaceCount: 0, behindCount: 0 };
@@ -196,13 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     return 'bg-red-500';
   };
 
-  const statusLabels: Record<string, string> = {
-    draft: 'Bozza',
-    'on-track': 'In linea',
-    'at-risk': 'A rischio',
-    'off-track': 'Fuori strada',
-    completed: 'Completato'
-  };
+  // Using STATUS_LABELS from constants for consistency
 
   const riskLevelConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof AlertTriangle }> = {
     low: { label: 'Basso', color: 'text-green-600', bgColor: 'bg-green-100', icon: CheckCircle2 },
@@ -245,7 +239,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-hidden">
+    <div className="flex flex-col gap-4 min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
@@ -317,12 +311,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       </div>
 
       {/* Main Content Grid - fills remaining space */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-hidden auto-rows-fr">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-fr" style={{ minHeight: 'calc(100vh - 320px)' }}>
         {/* Distribuzione per Stato */}
         <Card title="Distribuzione per Stato" className="flex flex-col overflow-hidden">
           {stats.total === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-              Nessun obiettivo
+            <div className="flex-1 flex items-center justify-center text-slate-300 dark:text-slate-600 text-sm">
+              —
             </div>
           ) : (
             <div className="flex-1 flex flex-col min-h-0">
@@ -466,58 +460,55 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         {/* Aggiornati di Recente - spans 2 columns on md */}
         <Card title="Aggiornati di Recente" className="md:col-span-2 lg:col-span-1 flex flex-col overflow-hidden">
           {recentlyUpdated.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-              Nessun obiettivo
+            <div className="flex-1 flex items-center justify-center text-slate-300 dark:text-slate-600 text-sm">
+              —
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto space-y-3">
-              {recentlyUpdated.map((obj) => (
-                <div key={obj.id} className="group">
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-xl flex-shrink-0 ${obj.status === 'completed' ? 'bg-green-100' :
-                      obj.status === 'at-risk' ? 'bg-orange-100' :
-                        obj.status === 'off-track' ? 'bg-red-100' :
-                          'bg-blue-100'
-                      }`}>
-                      <Target className={`w-4 h-4 ${obj.status === 'completed' ? 'text-green-600' :
-                        obj.status === 'at-risk' ? 'text-orange-600' :
-                          obj.status === 'off-track' ? 'text-red-600' :
-                            'text-blue-600'
-                        }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[obj.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {statusLabels[obj.status] || obj.status}
-                        </span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{obj.period}</span>
+              {recentlyUpdated.map((obj) => {
+                const approvalStatus = obj.approvalStatus || 'draft';
+                const bgColorMap: Record<string, string> = {
+                  'draft': 'bg-slate-100',
+                  'pending_review': 'bg-amber-100',
+                  'approved': 'bg-purple-100',
+                  'active': 'bg-green-100'
+                };
+                const textColorMap: Record<string, string> = {
+                  'draft': 'text-slate-600',
+                  'pending_review': 'text-amber-600',
+                  'approved': 'text-purple-600',
+                  'active': 'text-green-600'
+                };
+                return (
+                  <div key={obj.id} className="group">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-xl flex-shrink-0 ${bgColorMap[approvalStatus] || 'bg-blue-100'}`}>
+                        <Target className={`w-4 h-4 ${textColorMap[approvalStatus] || 'text-blue-600'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{obj.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-lg ${STATUS_COLORS[approvalStatus] || 'bg-gray-100 text-gray-600'}`}>
+                            {STATUS_LABELS[approvalStatus] || approvalStatus}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500">{obj.period}</span>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-base font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-base font-bold text-slate-900 dark:text-slate-100">{obj.progress}%</span>
+                    <div className="mt-2 ml-11">
+                      <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
                     </div>
                   </div>
-                  <div className="mt-2 ml-11">
-                    <ProgressBar value={obj.progress} height="h-1.5" color={getProgressColor(obj.progress)} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
       </div>
 
-      {/* Empty State */}
-      {stats.total === 0 && (
-        <Card className="text-center py-10 flex-shrink-0">
-          <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Target className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-          </div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Nessun obiettivo</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Crea il tuo primo OKR</p>
-        </Card>
-      )}
     </div>
   );
 };
