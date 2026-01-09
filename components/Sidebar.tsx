@@ -92,8 +92,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     ...(user?.role === 'superadmin' ? [{ id: 'superadmin', label: 'Gestione Aziende', icon: ICONS.Admin }] : []),
     // Gestione Utenti - only visible to azienda role (multi-tenant owner)
     ...(user?.role === 'azienda' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
-    // Billing - only visible to azienda role
-    ...(user?.role === 'azienda' ? [{ id: 'billing', label: 'Subscription', icon: ICONS.Billing, suffix: isPremium ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : undefined }] : []),
+    // Billing - hidden (all companies are premium by default)
+    // ...(user?.role === 'azienda' ? [{ id: 'billing', label: 'Subscription', icon: ICONS.Billing, suffix: isPremium ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : undefined }] : []),
     { id: 'profile', label: 'Profilo', icon: ICONS.Settings },
   ];
 
