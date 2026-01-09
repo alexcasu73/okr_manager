@@ -11,9 +11,11 @@ import helmet from 'helmet';
 import {
   createPool,
   initializeCoreSchema,
+  ensureSuperadminUser,
   createAuthRoutes,
   createAuthMiddleware,
   createUsersRoutes,
+  createSuperadminRoutes,
   ensureAdminUser,
   initEmailClient,
   initStripe,
@@ -29,6 +31,7 @@ import {
 import { initializeOKRSchema } from './db/schema.js';
 import { createOKRRoutes } from './okr/okr.routes.js';
 import { createTeamRoutes } from './team/team.routes.js';
+import { canCreateUser, canCreateOKR, canCreateKeyResult, getSubscriptionInfo } from './subscription/limits.service.js';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -91,11 +94,43 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Subscription info endpoint
+app.get('/api/subscription', authMiddleware, async (req, res) => {
+  try {
+    const companyId = req.user.company_id || req.user.id;
+    const info = await getSubscriptionInfo(pool, companyId);
+    res.json(info);
+  } catch (error) {
+    console.error('Get subscription info error:', error);
+    res.status(500).json({ error: 'Failed to get subscription info' });
+  }
+});
+
+// Check if current user can create an OKR
+app.get('/api/subscription/can-create-okr', authMiddleware, async (req, res) => {
+  try {
+    const companyId = req.user.company_id || req.user.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const result = await canCreateOKR(pool, companyId, userId, userRole);
+    res.json(result);
+  } catch (error) {
+    console.error('Check can create OKR error:', error);
+    res.status(500).json({ error: 'Failed to check OKR creation limit' });
+  }
+});
+
 // Auth routes (register, login, etc.)
 app.use('/api/auth', createAuthRoutes(config));
 
-// User management (admin only)
-app.use('/api/users', createUsersRoutes(config));
+// User management (azienda only)
+app.use('/api/users', createUsersRoutes({
+  ...config,
+  checkSubscriptionLimit: canCreateUser
+}));
+
+// Superadmin routes (superadmin only)
+app.use('/api/superadmin', createSuperadminRoutes(config));
 
 // Billing routes (if Stripe is configured)
 if (stripe) {
@@ -120,7 +155,9 @@ app.use('/api/okr', createOKRRoutes({
       return res.status(403).json({ error: 'Admin access required' });
     }
     next();
-  }
+  },
+  checkOKRLimit: canCreateOKR,
+  checkKeyResultLimit: canCreateKeyResult
 }));
 
 // Team routes
@@ -144,7 +181,14 @@ app.use((req, res) => {
 // === START SERVER ===
 async function start() {
   try {
-    // Ensure admin user exists
+    // Ensure superadmin user exists (always created with default or env credentials)
+    await ensureSuperadminUser(pool, {
+      email: process.env.SUPERADMIN_EMAIL,
+      password: process.env.SUPERADMIN_PASSWORD,
+      name: process.env.SUPERADMIN_NAME || 'Super Admin'
+    });
+
+    // Ensure admin user exists (deprecated - use azienda instead)
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
       await ensureAdminUser(pool, process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
     }

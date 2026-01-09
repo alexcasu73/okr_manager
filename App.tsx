@@ -9,11 +9,16 @@ import TeamPage from './components/TeamPage';
 import SettingsPage from './components/SettingsPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import UserManagementPage from './components/UserManagementPage';
+import SuperadminPage from './components/SuperadminPage';
 import ProfilePage from './components/ProfilePage';
+import BillingPage from './components/BillingPage';
 import CreateOKRModal from './components/CreateOKRModal';
 import OKRDetailModal from './components/OKRDetailModal';
 import LoginPage from './components/LoginPage';
 import InvitePage from './components/InvitePage';
+import RegisterAziendaPage from './components/RegisterAziendaPage';
+import VerifyEmailPage from './components/VerifyEmailPage';
+import SetupAccountPage from './components/SetupAccountPage';
 import { ViewMode } from './types';
 import { Loader2, Menu } from 'lucide-react';
 
@@ -36,7 +41,7 @@ function useRoute() {
 }
 
 const AppContent: React.FC = () => {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, refreshUser } = useAuth();
   const { path, navigate } = useRoute();
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +53,35 @@ const AppContent: React.FC = () => {
   // Check for invitation route
   const inviteMatch = path.match(/^\/invite\/(.+)$/);
   const inviteToken = inviteMatch ? inviteMatch[1] : null;
+
+  // Check for register route
+  const isRegisterPage = path === '/register';
+
+  // Check for verify-email route
+  const verifyEmailMatch = path.match(/^\/verify-email/);
+  const verifyEmailToken = verifyEmailMatch ? new URLSearchParams(window.location.search).get('token') : null;
+
+  // Check for setup-account route
+  const setupAccountMatch = path.match(/^\/setup-account/);
+  const setupAccountToken = setupAccountMatch ? new URLSearchParams(window.location.search).get('token') : null;
+
+  // Check for billing route (redirect from Stripe)
+  const isBillingPage = path === '/billing';
+
+  // Set default view based on user role or URL
+  useEffect(() => {
+    // Handle /billing URL redirect from Stripe
+    if (isBillingPage && user?.role === 'azienda') {
+      setCurrentView('billing');
+      return;
+    }
+    if (user?.role === 'superadmin' && currentView === 'dashboard') {
+      setCurrentView('superadmin');
+    } else if (user?.role === 'azienda' && currentView === 'dashboard') {
+      setCurrentView('admin'); // Azienda atterra su Gestione Utenti
+    }
+    // admin, lead, user → atterrano sulla Dashboard
+  }, [user?.role, isBillingPage]);
 
   // Loading state
   if (isLoading) {
@@ -74,9 +108,48 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Handle email verification page (can be accessed without auth)
+  if (verifyEmailToken) {
+    return (
+      <VerifyEmailPage
+        token={verifyEmailToken}
+        onVerified={async () => {
+          await refreshUser();
+          setCurrentView('dashboard');
+          navigate('/');
+        }}
+        onNavigateToLogin={() => navigate('/')}
+      />
+    );
+  }
+
+  // Handle setup account page (for invited users to set their password)
+  if (setupAccountToken) {
+    return (
+      <SetupAccountPage
+        token={setupAccountToken}
+        onSetupComplete={async () => {
+          await refreshUser();
+          setCurrentView('dashboard');
+          navigate('/');
+        }}
+        onNavigateToLogin={() => navigate('/')}
+      />
+    );
+  }
+
+  // Handle register page (can be accessed without auth)
+  if (isRegisterPage) {
+    return (
+      <RegisterAziendaPage
+        onNavigateToLogin={() => navigate('/')}
+      />
+    );
+  }
+
   // Not authenticated - show login
   if (!isAuthenticated || !user) {
-    return <LoginPage />;
+    return <LoginPage onNavigateToRegister={() => navigate('/register')} />;
   }
 
   // Convert auth user to the format expected by components
@@ -108,8 +181,12 @@ const AppContent: React.FC = () => {
         return <SettingsPage />;
       case 'admin':
         return <UserManagementPage />;
+      case 'superadmin':
+        return <SuperadminPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'billing':
+        return <BillingPage />;
       default:
         return <Dashboard currentUser={currentUser} />;
     }

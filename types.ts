@@ -3,7 +3,7 @@ import React from 'react';
 export type Status = 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft' | 'approved';
 export type Confidence = 'high' | 'medium' | 'low';
 export type MetricType = 'percentage' | 'number' | 'currency' | 'boolean';
-export type ViewMode = 'dashboard' | 'okrs' | 'team' | 'reports' | 'settings' | 'admin' | 'profile';
+export type ViewMode = 'dashboard' | 'okrs' | 'team' | 'reports' | 'settings' | 'admin' | 'superadmin' | 'profile' | 'billing';
 export type ApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'active';
 export type OKRLevel = 'company' | 'department' | 'team' | 'individual';
 

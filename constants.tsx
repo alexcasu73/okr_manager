@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 
 export const ICONS = {
@@ -36,6 +37,7 @@ export const ICONS = {
   Check: <CheckCircle2 size={16} />,
   Error: <XCircle size={16} />,
   Admin: <Shield size={20} />,
+  Billing: <CreditCard size={20} />,
 };
 
 // Colori per ApprovalStatus (flusso di approvazione)

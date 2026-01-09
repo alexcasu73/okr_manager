@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './UIComponents';
 import { ICONS } from '../constants';
-import { okrAPI, CreateObjectiveData, UserBasic, ParentObjective, OKRLevel } from '../api/client';
-import { Loader2, AlertCircle, Trash2, User, GitBranch } from 'lucide-react';
+import { okrAPI, CreateObjectiveData, UserBasic, ParentObjective, OKRLevel, subscriptionAPI, SubscriptionInfo, CanCreateOKRResult } from '../api/client';
+import { Loader2, AlertCircle, Trash2, User, GitBranch, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface CreateOKRModalProps {
@@ -56,6 +56,8 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [availableParents, setAvailableParents] = useState<ParentObjective[]>([]);
   const [isLoadingParents, setIsLoadingParents] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
+  const [canCreateOKRResult, setCanCreateOKRResult] = useState<CanCreateOKRResult | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -67,10 +69,23 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     keyResults: [{ ...emptyKeyResult }] as KeyResultFormData[]
   });
 
-  // Load users when modal opens
+  // Load users and subscription info when modal opens
   useEffect(() => {
     if (isOpen) {
       loadUsers();
+      // Load subscription info for KR limits
+      subscriptionAPI.getInfo()
+        .then(info => setSubscriptionInfo(info))
+        .catch(err => console.error('Failed to load subscription info:', err));
+      // Check if user can create an OKR
+      subscriptionAPI.canCreateOKR()
+        .then(result => {
+          setCanCreateOKRResult(result);
+          if (!result.allowed && result.error) {
+            setError(result.error);
+          }
+        })
+        .catch(err => console.error('Failed to check OKR limit:', err));
     }
   }, [isOpen]);
 
@@ -115,11 +130,26 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
   if (!isOpen) return null;
 
+  // Check if KR limit is reached (for free tier)
+  // Default to 2 KRs if subscription info not loaded yet (assume free tier)
+  const isPremium = subscriptionInfo?.tier === 'premium';
+  const krLimit = isPremium ? null : (subscriptionInfo?.limits?.krsPerOkr ?? 2);
+  const isKRLimitReached = !isPremium && formData.keyResults.length >= (krLimit ?? 2);
+
   const handleAddKR = () => {
-    setFormData({
-      ...formData,
-      keyResults: [...formData.keyResults, { ...emptyKeyResult }]
-    });
+    // Check limit directly with current state
+    const currentKRCount = formData.keyResults.length;
+    const maxKRs = isPremium ? Infinity : (subscriptionInfo?.limits?.krsPerOkr ?? 2);
+
+    if (currentKRCount >= maxKRs) {
+      setError(`Hai raggiunto il limite di ${maxKRs} Key Results per OKR nel piano Free. Passa a Premium per aggiungerne altri.`);
+      return;
+    }
+    setError(null); // Clear any previous error
+    setFormData(prev => ({
+      ...prev,
+      keyResults: [...prev.keyResults, { ...emptyKeyResult }]
+    }));
   };
 
   const handleRemoveKR = (index: number) => {
@@ -131,7 +161,14 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
 
   const handleKRChange = (index: number, field: keyof KeyResultFormData, value: string | number) => {
     const newKRs = [...formData.keyResults];
-    newKRs[index] = { ...newKRs[index], [field]: value };
+    // Parse numeric fields to remove leading zeros
+    const numericFields = ['startValue', 'targetValue', 'currentValue'];
+    if (numericFields.includes(field)) {
+      const numValue = value === '' ? 0 : parseFloat(String(value)) || 0;
+      newKRs[index] = { ...newKRs[index], [field]: numValue };
+    } else {
+      newKRs[index] = { ...newKRs[index], [field]: value };
+    }
     setFormData({ ...formData, keyResults: newKRs });
   };
 
@@ -139,6 +176,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     setStep(1);
     setError(null);
     setAvailableParents([]);
+    setCanCreateOKRResult(null);
     setFormData({
       title: '',
       description: '',
@@ -160,6 +198,12 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     e.preventDefault();
     setError(null);
 
+    // Check OKR limit
+    if (canCreateOKRResult && !canCreateOKRResult.allowed) {
+      setError(canCreateOKRResult.error || 'Hai raggiunto il limite di OKR per il tuo ruolo nel piano Free.');
+      return;
+    }
+
     // Validation
     if (!formData.title.trim()) {
       setError('Il titolo dell\'obiettivo è obbligatorio');
@@ -179,6 +223,12 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     const validKRs = formData.keyResults.filter(kr => kr.description.trim());
     if (validKRs.length === 0) {
       setError('Aggiungi almeno un Key Result');
+      return;
+    }
+
+    // Check KR limit for free tier
+    if (!isPremium && validKRs.length > (krLimit ?? 2)) {
+      setError(`Puoi creare massimo ${krLimit ?? 2} Key Results per OKR nel piano Free. Passa a Premium per aggiungerne altri.`);
       return;
     }
 
@@ -382,11 +432,22 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
           {step === 2 && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                 <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">Key Results</h3>
+                 <div className="flex items-center gap-2">
+                   <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">Key Results</h3>
+                   {krLimit !== null && (
+                     <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                       ({formData.keyResults.length}/{krLimit})
+                     </span>
+                   )}
+                 </div>
                  <button
                    type="button"
                    onClick={handleAddKR}
-                   className="text-[10px] font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                   className={`text-[10px] font-medium flex items-center gap-1 ${
+                     isKRLimitReached
+                       ? 'text-slate-400 dark:text-slate-500'
+                       : 'text-blue-600 hover:text-blue-700'
+                   }`}
                    disabled={isSubmitting}
                  >
                    <span className="[&>svg]:w-3 [&>svg]:h-3">{ICONS.Plus}</span> Aggiungi KR
@@ -455,30 +516,33 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Iniziale</label>
                        <input
-                         type="number"
+                         type="text"
+                         inputMode="decimal"
                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.startValue}
-                         onChange={e => handleKRChange(idx, 'startValue', e.target.value)}
+                         onChange={e => handleKRChange(idx, 'startValue', e.target.value.replace(/^0+(?=\d)/, ''))}
                          disabled={isSubmitting}
                        />
                      </div>
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Attuale</label>
                        <input
-                         type="number"
+                         type="text"
+                         inputMode="decimal"
                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.currentValue}
-                         onChange={e => handleKRChange(idx, 'currentValue', e.target.value)}
+                         onChange={e => handleKRChange(idx, 'currentValue', e.target.value.replace(/^0+(?=\d)/, ''))}
                          disabled={isSubmitting}
                        />
                      </div>
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Target *</label>
                        <input
-                         type="number"
+                         type="text"
+                         inputMode="decimal"
                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                          value={kr.targetValue}
-                         onChange={e => handleKRChange(idx, 'targetValue', e.target.value)}
+                         onChange={e => handleKRChange(idx, 'targetValue', e.target.value.replace(/^0+(?=\d)/, ''))}
                          disabled={isSubmitting}
                        />
                      </div>
@@ -495,11 +559,32 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                </Button>
              )}
              {step === 1 ? (
-               <Button type="button" size="sm" onClick={() => setStep(2)}>
+               <Button
+                 type="button"
+                 size="sm"
+                 onClick={() => {
+                   // Check OKR limit before proceeding
+                   if (canCreateOKRResult && !canCreateOKRResult.allowed) {
+                     setError(canCreateOKRResult.error || 'Hai raggiunto il limite di OKR per il tuo ruolo nel piano Free.');
+                     return;
+                   }
+                   setStep(2);
+                 }}
+               >
                  Avanti
                </Button>
              ) : (
-               <Button type="submit" size="sm" disabled={isSubmitting}>
+               <Button
+                 type="submit"
+                 size="sm"
+                 disabled={isSubmitting}
+                 onClick={() => {
+                   // Check OKR limit before submitting
+                   if (canCreateOKRResult && !canCreateOKRResult.allowed) {
+                     setError(canCreateOKRResult.error || 'Hai raggiunto il limite di OKR per il tuo ruolo nel piano Free.');
+                   }
+                 }}
+               >
                  {isSubmitting ? (
                    <span className="flex items-center gap-1.5">
                      <Loader2 className="w-3 h-3 animate-spin" />

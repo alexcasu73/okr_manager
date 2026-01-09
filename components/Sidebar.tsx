@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ICONS } from '../constants';
 import { ViewMode } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Moon, Sun, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { subscriptionAPI } from '../api/client';
+import { Moon, Sun, X, ChevronLeft, ChevronRight, Crown } from 'lucide-react';
 
 interface NavItemProps {
   item: {
     id: string;
     label: string;
     icon: React.ReactNode;
+    suffix?: React.ReactNode;
   };
   active?: boolean;
   onClick: (id: string) => void;
@@ -30,7 +32,12 @@ const NavItem: React.FC<NavItemProps> = ({ item, active, onClick, collapsed }) =
     <span className={`${active ? 'text-white dark:text-slate-900' : 'text-slate-500 dark:text-slate-400'} [&>svg]:w-[18px] [&>svg]:h-[18px]`}>
       {item.icon}
     </span>
-    {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+    {!collapsed && (
+      <span className="font-medium text-sm flex items-center gap-2">
+        {item.label}
+        {item.suffix}
+      </span>
+    )}
   </button>
 );
 
@@ -53,6 +60,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const { toggleTheme, isDark } = useTheme();
+  const [isPremium, setIsPremium] = useState(false);
+
+  // Fetch subscription info for azienda users
+  useEffect(() => {
+    if (user?.role === 'azienda') {
+      subscriptionAPI.getInfo()
+        .then(info => setIsPremium(info.tier === 'premium'))
+        .catch(() => setIsPremium(false));
+    }
+  }, [user?.role]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -60,16 +77,23 @@ const Sidebar: React.FC<SidebarProps> = ({
     window.location.replace('/');
   };
 
-  const menuItems = [
+  // Menu items based on role
+  // Superadmin e Azienda non hanno menu principale (usano solo bottomItems)
+  const menuItems = (user?.role === 'superadmin' || user?.role === 'azienda') ? [] : [
     { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
     { id: 'okrs', label: 'Objectives', icon: ICONS.Target },
     { id: 'team', label: 'My Team', icon: ICONS.Team },
   ];
 
   const bottomItems = [
-    { id: 'reports', label: 'Analytics', icon: ICONS.Analytics },
-    // Admin menu - only visible to admins
-    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
+    // Analytics - not visible to superadmin or azienda
+    ...(user?.role !== 'superadmin' && user?.role !== 'azienda' ? [{ id: 'reports', label: 'Analytics', icon: ICONS.Analytics }] : []),
+    // Superadmin panel - only visible to superadmin role
+    ...(user?.role === 'superadmin' ? [{ id: 'superadmin', label: 'Gestione Aziende', icon: ICONS.Admin }] : []),
+    // Gestione Utenti - only visible to azienda role (multi-tenant owner)
+    ...(user?.role === 'azienda' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
+    // Billing - only visible to azienda role
+    ...(user?.role === 'azienda' ? [{ id: 'billing', label: 'Subscription', icon: ICONS.Billing, suffix: isPremium ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : undefined }] : []),
     { id: 'profile', label: 'Profilo', icon: ICONS.Settings },
   ];
 

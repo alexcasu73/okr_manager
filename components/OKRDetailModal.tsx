@@ -1474,10 +1474,11 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                             Valore Iniziale
                           </label>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                             value={newKR.startValue}
-                            onChange={e => setNewKR({...newKR, startValue: parseFloat(e.target.value) || 0})}
+                            onChange={e => setNewKR({...newKR, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
                             disabled={isSaving}
                           />
                         </div>
@@ -1486,10 +1487,11 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                             Valore Target *
                           </label>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                             value={newKR.targetValue}
-                            onChange={e => setNewKR({...newKR, targetValue: parseFloat(e.target.value) || 0})}
+                            onChange={e => setNewKR({...newKR, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
                             disabled={isSaving}
                           />
                         </div>
@@ -1498,10 +1500,11 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                             Valore Attuale
                           </label>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                             value={newKR.currentValue}
-                            onChange={e => setNewKR({...newKR, currentValue: parseFloat(e.target.value) || 0})}
+                            onChange={e => setNewKR({...newKR, currentValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
                             disabled={isSaving}
                           />
                         </div>
@@ -1640,20 +1643,22 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                       <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Iniziale</label>
                                         <input
-                                          type="number"
+                                          type="text"
+                                          inputMode="decimal"
                                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                           value={editKRForm.startValue}
-                                          onChange={e => setEditKRForm({...editKRForm, startValue: parseFloat(e.target.value) || 0})}
+                                          onChange={e => setEditKRForm({...editKRForm, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
                                           disabled={isSaving}
                                         />
                                       </div>
                                       <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Target</label>
                                         <input
-                                          type="number"
+                                          type="text"
+                                          inputMode="decimal"
                                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                           value={editKRForm.targetValue}
-                                          onChange={e => setEditKRForm({...editKRForm, targetValue: parseFloat(e.target.value) || 0})}
+                                          onChange={e => setEditKRForm({...editKRForm, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
                                           disabled={isSaving}
                                         />
                                       </div>

@@ -6,7 +6,6 @@ import {
   Edit2,
   Trash2,
   Key,
-  Crown,
   Shield,
   UserCheck,
   X,
@@ -51,6 +50,11 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
 
 // Roles that each user type can assign
 const ASSIGNABLE_ROLES: Record<string, Array<{ value: string; label: string }>> = {
+  azienda: [
+    { value: 'user', label: 'User' },
+    { value: 'lead', label: 'Lead' },
+    { value: 'admin', label: 'Admin' }
+  ],
   admin: [
     { value: 'user', label: 'User' },
     { value: 'lead', label: 'Lead' },
@@ -84,7 +88,6 @@ const UserManagementPage: React.FC = () => {
   // Form states
   const [createForm, setCreateForm] = useState<CreateUserData>({
     email: '',
-    password: '',
     name: '',
     role: 'user'
   });
@@ -141,7 +144,7 @@ const UserManagementPage: React.FC = () => {
     try {
       await adminAPI.createUser(createForm);
       setShowCreateModal(false);
-      setCreateForm({ email: '', password: '', name: '', role: 'user' });
+      setCreateForm({ email: '', name: '', role: 'user' });
       fetchUsers();
     } catch (err: any) {
       setFormError(err.message || 'Errore nella creazione utente');
@@ -204,16 +207,6 @@ const UserManagementPage: React.FC = () => {
       setFormError(err.message || 'Errore nel reset password');
     } finally {
       setFormLoading(false);
-    }
-  };
-
-  // Toggle subscription
-  const handleToggleSubscription = async (user: AdminUser) => {
-    try {
-      await adminAPI.toggleSubscription(user.id);
-      fetchUsers();
-    } catch (err: any) {
-      alert(err.message || 'Errore nel toggle subscription');
     }
   };
 
@@ -282,8 +275,8 @@ const UserManagementPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Check if current user is admin
-  if (currentUser?.role !== 'admin') {
+  // Check if current user is azienda (only azienda can manage users)
+  if (currentUser?.role !== 'azienda') {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-12 text-center max-w-md">
@@ -292,7 +285,7 @@ const UserManagementPage: React.FC = () => {
           </div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Accesso Negato</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
-            Solo gli amministratori possono accedere a questa sezione.
+            Solo le aziende possono accedere a questa sezione.
           </p>
         </div>
       </div>
@@ -373,7 +366,6 @@ const UserManagementPage: React.FC = () => {
                   <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">User</th>
                   <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Email</th>
                   <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Role</th>
-                  <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Plan</th>
                   <th className="text-left px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Created</th>
                   <th className="text-right px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Actions</th>
                 </tr>
@@ -406,27 +398,11 @@ const UserManagementPage: React.FC = () => {
                         {user.role === 'admin' ? 'Admin' : user.role === 'lead' ? 'Lead' : 'User'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        user.subscription_tier === 'premium'
-                          ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}>
-                        {user.subscription_tier === 'premium' ? 'Premium' : 'Free'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                       {new Date(user.created_at).toLocaleDateString('it-IT')}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleToggleSubscription(user)}
-                          className="p-2 text-slate-400 dark:text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title={user.subscription_tier === 'premium' ? 'Rimuovi Premium' : 'Rendi Premium'}
-                        >
-                          <Crown className="w-5 h-5" />
-                        </button>
                         <button
                           onClick={() => openResetPasswordModal(user)}
                           className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -489,18 +465,9 @@ const UserManagementPage: React.FC = () => {
               onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
               className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={createForm.password}
-              onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Minimo 8 caratteri"
-            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              L'utente riceverà un'email per impostare la password
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ruolo</label>

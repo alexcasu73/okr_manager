@@ -288,7 +288,7 @@ function calculateHealthMetrics(objective, keyResults) {
 // === OBJECTIVES ===
 
 export async function getObjectives(pool, filters = {}) {
-  const { ownerId, userId, level, period, status, parentObjectiveId, approvalStatus } = filters;
+  const { ownerId, userId, level, period, status, parentObjectiveId, approvalStatus, companyId } = filters;
   let query = `
     SELECT DISTINCT o.*,
            u.name as owner_name,
@@ -306,6 +306,12 @@ export async function getObjectives(pool, filters = {}) {
   `;
   const params = [];
   let paramIndex = 1;
+
+  // Multi-tenant: filter by company_id (owner's company)
+  if (companyId) {
+    query += ` AND u.company_id = $${paramIndex++}`;
+    params.push(companyId);
+  }
 
   // userId filter: show objectives where user is owner OR contributor
   if (userId) {
@@ -697,17 +703,33 @@ async function updateObjectiveProgress(pool, objectiveId) {
 
 // === ANALYTICS ===
 
-export async function getStats(pool, userId, isAdmin) {
-  const whereClause = isAdmin ? '' : 'WHERE o.owner_id = $1';
-  const params = isAdmin ? [] : [userId];
+export async function getStats(pool, userId, isAdmin, companyId = null) {
+  const conditions = [];
+  const params = [];
+  let paramIndex = 1;
+
+  // Multi-tenant: filter by company_id
+  if (companyId) {
+    conditions.push(`u.company_id = $${paramIndex++}`);
+    params.push(companyId);
+  }
+
+  // Filter by user if not admin
+  if (!isAdmin) {
+    conditions.push(`o.owner_id = $${paramIndex++}`);
+    params.push(userId);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const { rows: [stats] } = await pool.query(`
     SELECT
       COUNT(*) as total_objectives,
-      ROUND(AVG(progress)) as avg_progress,
-      COUNT(*) FILTER (WHERE status IN ('at-risk', 'off-track')) as at_risk_count,
-      COUNT(*) FILTER (WHERE status = 'completed') as completed_count
+      ROUND(AVG(o.progress)) as avg_progress,
+      COUNT(*) FILTER (WHERE o.status IN ('at-risk', 'off-track')) as at_risk_count,
+      COUNT(*) FILTER (WHERE o.status = 'completed') as completed_count
     FROM objectives o
+    JOIN users u ON o.owner_id = u.id
     ${whereClause}
   `, params);
 
@@ -898,7 +920,7 @@ export async function getAvailableParents(pool, level, excludeId = null) {
  * Returns nested structure with children
  */
 export async function getObjectiveHierarchy(pool, filters = {}) {
-  const { period, rootLevel = 'company' } = filters;
+  const { period, rootLevel = 'company', companyId } = filters;
 
   // Get all objectives
   let query = `
@@ -915,6 +937,12 @@ export async function getObjectiveHierarchy(pool, filters = {}) {
   `;
   const params = [];
   let paramIndex = 1;
+
+  // Multi-tenant: filter by company_id
+  if (companyId) {
+    query += ` AND u.company_id = $${paramIndex++}`;
+    params.push(companyId);
+  }
 
   if (period) {
     query += ` AND o.period = $${paramIndex++}`;

@@ -43,15 +43,17 @@ import {
 
 export function createOKRRoutes(config) {
   const router = Router();
-  const { pool, authMiddleware, requireAdmin } = config;
+  const { pool, authMiddleware, requireAdmin, checkOKRLimit, checkKeyResultLimit } = config;
 
   // All routes require authentication
   router.use(authMiddleware);
 
   // Get users that can be assigned OKRs (accessible to lead and admin)
+  // Multi-tenant: filters by company_id to show only users from same company
   router.get('/assignable-users', async (req, res, next) => {
     try {
       const userRole = req.user.role || 'user';
+      const companyId = req.user.company_id;
 
       // Only admin and lead can assign to others
       if (userRole === 'user') {
@@ -66,14 +68,21 @@ export function createOKRRoutes(config) {
 
       if (userRole === 'lead') {
         // Lead can only assign to users (not to other leads or admins)
+        // Filter by company_id for tenant isolation
         const { rows } = await pool.query(
-          "SELECT id, name, email, role FROM users WHERE role = 'user' ORDER BY name"
+          `SELECT id, name, email, role FROM users
+           WHERE role = 'user' AND ($1::uuid IS NULL OR company_id = $1)
+           ORDER BY name`,
+          [companyId]
         );
         res.json(rows);
       } else {
-        // Admin can see all users
+        // Admin can see all users within the same company
         const { rows } = await pool.query(
-          'SELECT id, name, email, role FROM users ORDER BY name'
+          `SELECT id, name, email, role FROM users
+           WHERE $1::uuid IS NULL OR company_id = $1
+           ORDER BY name`,
+          [companyId]
         );
         res.json(rows);
       }
@@ -85,6 +94,7 @@ export function createOKRRoutes(config) {
   // === OBJECTIVES ===
 
   // Get all objectives (with optional filters)
+  // Multi-tenant: filters by company_id for tenant isolation
   router.get('/objectives', async (req, res, next) => {
     try {
       // Auto-stop expired objectives before fetching
@@ -92,6 +102,11 @@ export function createOKRRoutes(config) {
 
       const { level, period, status, mine } = req.query;
       const filters = { level, period, status };
+
+      // Multi-tenant: filter by company_id
+      if (req.user.company_id) {
+        filters.companyId = req.user.company_id;
+      }
 
       // If 'mine' query param or user is not admin, filter by user (owner OR contributor)
       if (mine === 'true' || req.user.role !== 'admin') {
@@ -155,6 +170,28 @@ export function createOKRRoutes(config) {
         if (userRole === 'lead' && level !== 'individual') {
           return res.status(403).json({
             error: 'Come Lead puoi assegnare ad altri utenti solo OKR individuali'
+          });
+        }
+      }
+
+      // Check subscription limits for OKR creation
+      if (checkOKRLimit) {
+        const companyId = req.user.company_id || req.user.id;
+        const limitCheck = await checkOKRLimit(pool, companyId, req.user.id, userRole);
+        if (!limitCheck.allowed) {
+          return res.status(403).json({
+            error: limitCheck.error,
+            usage: limitCheck.usage,
+            limits: limitCheck.limits
+          });
+        }
+
+        // Check KR limit for KRs being created with the OKR
+        const { keyResults = [] } = req.body;
+        if (limitCheck.limits && keyResults.length > limitCheck.limits.krsPerOkr) {
+          return res.status(403).json({
+            error: `Puoi creare massimo ${limitCheck.limits.krsPerOkr} Key Results per OKR nel piano Free.`,
+            limits: limitCheck.limits
           });
         }
       }
@@ -257,6 +294,19 @@ export function createOKRRoutes(config) {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
+      // Check subscription limits for Key Result creation
+      if (checkKeyResultLimit) {
+        const companyId = req.user.company_id || req.user.id;
+        const limitCheck = await checkKeyResultLimit(pool, companyId, req.params.id);
+        if (!limitCheck.allowed) {
+          return res.status(403).json({
+            error: limitCheck.error,
+            usage: limitCheck.usage,
+            limits: limitCheck.limits
+          });
+        }
+      }
+
       const keyResult = await createKeyResult(pool, req.params.id, req.body, req.user.id);
       res.status(201).json(keyResult);
     } catch (error) {
@@ -302,10 +352,12 @@ export function createOKRRoutes(config) {
   // === ANALYTICS ===
 
   // Get dashboard stats
+  // Multi-tenant: filters stats by company_id
   router.get('/stats', async (req, res, next) => {
     try {
       const isAdmin = req.user.role === 'admin';
-      const stats = await getStats(pool, req.user.id, isAdmin);
+      const companyId = req.user.company_id || null;
+      const stats = await getStats(pool, req.user.id, isAdmin, companyId);
       res.json(stats);
     } catch (error) {
       next(error);
@@ -325,10 +377,12 @@ export function createOKRRoutes(config) {
   // === HIERARCHY ENDPOINTS ===
 
   // Get full hierarchy tree
+  // Multi-tenant: filters by company_id
   router.get('/hierarchy', async (req, res, next) => {
     try {
       const { period } = req.query;
-      const hierarchy = await getObjectiveHierarchy(pool, { period });
+      const companyId = req.user.company_id || null;
+      const hierarchy = await getObjectiveHierarchy(pool, { period, companyId });
       res.json(hierarchy);
     } catch (error) {
       next(error);

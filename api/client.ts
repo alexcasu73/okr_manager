@@ -72,6 +72,43 @@ export interface RegisterData {
   name: string;
 }
 
+export interface RegisterAziendaResponse {
+  message: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+}
+
+export interface SetupAccountInfo {
+  name: string;
+  email: string;
+  companyName: string;
+}
+
+export interface SetupAccountResponse {
+  message: string;
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+}
+
 export const authAPI = {
   async login(email: string, password: string): Promise<LoginResponse> {
     const response = await fetchAPI<LoginResponse>('/auth/login', {
@@ -79,6 +116,43 @@ export const authAPI = {
       body: JSON.stringify({ email, password }),
     });
     setAuthToken(response.token);
+    return response;
+  },
+
+  async registerAzienda(data: { email: string; password: string; name: string }): Promise<RegisterAziendaResponse> {
+    return fetchAPI<RegisterAziendaResponse>('/auth/register-azienda', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async verifyEmail(token: string): Promise<VerifyEmailResponse> {
+    const response = await fetchAPI<VerifyEmailResponse>(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+    if (response.token) {
+      setAuthToken(response.token);
+    }
+    return response;
+  },
+
+  async resendVerification(email: string): Promise<{ message: string }> {
+    return fetchAPI<{ message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async getSetupAccountInfo(token: string): Promise<SetupAccountInfo> {
+    return fetchAPI<SetupAccountInfo>(`/auth/setup-account?token=${encodeURIComponent(token)}`);
+  },
+
+  async setupAccount(token: string, password: string): Promise<SetupAccountResponse> {
+    const response = await fetchAPI<SetupAccountResponse>('/auth/setup-account', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+    if (response.token) {
+      setAuthToken(response.token);
+    }
     return response;
   },
 
@@ -684,7 +758,6 @@ export interface AdminUser {
 
 export interface CreateUserData {
   email: string;
-  password: string;
   name: string;
   role?: 'user' | 'lead' | 'admin';
 }
@@ -771,6 +844,240 @@ export const adminAPI = {
     return fetchAPI(`/okr/admin/users/${fromUserId}/reassign-okrs`, {
       method: 'POST',
       body: JSON.stringify({ targetUserId: toUserId }),
+    });
+  },
+};
+
+// === SUPERADMIN API ===
+
+export interface Azienda {
+  id: string;
+  email: string;
+  name: string;
+  subscription_tier: 'free' | 'premium';
+  is_active: boolean;
+  users_count: number;
+  okr_count?: number;
+  created_at: string;
+  updated_at: string;
+  users?: AdminUser[];
+}
+
+export interface SuperadminStats {
+  totalAziende: number;
+  activeAziende: number;
+  premiumAziende: number;
+  totalUsers: number;
+  totalOkrs: number;
+  totalSuperadmins: number;
+}
+
+export interface Superadmin {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSuperadminData {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface CreateAziendaData {
+  email: string;
+  password: string;
+  name: string;
+  subscriptionTier?: 'free' | 'premium';
+}
+
+export const superadminAPI = {
+  // Get platform stats
+  async getStats(): Promise<SuperadminStats> {
+    return fetchAPI<SuperadminStats>('/superadmin/stats');
+  },
+
+  // List all aziende
+  async getAziende(): Promise<Azienda[]> {
+    return fetchAPI<Azienda[]>('/superadmin/aziende');
+  },
+
+  // Get single azienda with details
+  async getAzienda(id: string): Promise<Azienda> {
+    return fetchAPI<Azienda>(`/superadmin/aziende/${id}`);
+  },
+
+  // Create new azienda
+  async createAzienda(data: CreateAziendaData): Promise<Azienda> {
+    return fetchAPI<Azienda>('/superadmin/aziende', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update azienda
+  async updateAzienda(id: string, data: { name?: string; email?: string }): Promise<Azienda> {
+    return fetchAPI<Azienda>(`/superadmin/aziende/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Change subscription tier
+  async changeSubscription(id: string, tier: 'free' | 'premium'): Promise<Azienda> {
+    return fetchAPI<Azienda>(`/superadmin/aziende/${id}/subscription`, {
+      method: 'PATCH',
+      body: JSON.stringify({ tier }),
+    });
+  },
+
+  // Enable/disable azienda
+  async setStatus(id: string, isActive: boolean): Promise<Azienda & { message: string }> {
+    return fetchAPI<Azienda & { message: string }>(`/superadmin/aziende/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
+    });
+  },
+
+  // Delete azienda
+  async deleteAzienda(id: string): Promise<{ message: string }> {
+    return fetchAPI<{ message: string }>(`/superadmin/aziende/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // === SUPERADMIN MANAGEMENT ===
+
+  // List all superadmins
+  async getSuperadmins(): Promise<Superadmin[]> {
+    return fetchAPI<Superadmin[]>('/superadmin/superadmins');
+  },
+
+  // Create new superadmin
+  async createSuperadmin(data: CreateSuperadminData): Promise<Superadmin> {
+    return fetchAPI<Superadmin>('/superadmin/superadmins', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete superadmin
+  async deleteSuperadmin(id: string): Promise<{ message: string }> {
+    return fetchAPI<{ message: string }>(`/superadmin/superadmins/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// === SUBSCRIPTION API ===
+
+export interface SubscriptionUsage {
+  users: {
+    admins: number;
+    leads: number;
+    users: number;
+  };
+  okrsByRole: {
+    admin: number;
+    lead: number;
+    user: number;
+  };
+  totals: {
+    okrs: number;
+    keyResults: number;
+  };
+}
+
+export interface SubscriptionLimits {
+  users: {
+    admins: number;
+    leads: number;
+    users: number;
+  };
+  okrsPerRole: {
+    admin: number;
+    lead: number;
+    user: number;
+  };
+  krsPerOkr: number;
+}
+
+export interface SubscriptionInfo {
+  tier: 'free' | 'premium';
+  usage: SubscriptionUsage;
+  limits: SubscriptionLimits | null;
+}
+
+export interface CanCreateOKRResult {
+  allowed: boolean;
+  error?: string;
+  limits?: SubscriptionLimits;
+}
+
+export const subscriptionAPI = {
+  async getInfo(): Promise<SubscriptionInfo> {
+    return fetchAPI<SubscriptionInfo>('/subscription');
+  },
+
+  async canCreateOKR(): Promise<CanCreateOKRResult> {
+    return fetchAPI<CanCreateOKRResult>('/subscription/can-create-okr');
+  },
+};
+
+// === BILLING API ===
+
+export interface PricingPlan {
+  id: 'monthly' | 'yearly';
+  name: string;
+  interval: 'month' | 'year';
+  price: number;
+  priceId: string;
+  savings?: string;
+  features: string[];
+}
+
+export interface PricingInfo {
+  configured: boolean;
+  freePlan: {
+    name: string;
+    price: number;
+    allFeatures: { name: string; available: boolean }[];
+  };
+  plans: PricingPlan[];
+}
+
+export interface BillingSubscription {
+  tier: 'free' | 'premium';
+  limits: Record<string, unknown>;
+  usage: Record<string, unknown>;
+  subscription: {
+    plan: 'monthly' | 'yearly';
+    status: string;
+    currentPeriodEnd: string;
+  } | null;
+}
+
+export const billingAPI = {
+  async getPricing(): Promise<PricingInfo> {
+    return fetchAPI<PricingInfo>('/billing/pricing');
+  },
+
+  async getSubscription(): Promise<BillingSubscription> {
+    return fetchAPI<BillingSubscription>('/billing/subscription');
+  },
+
+  async createCheckoutSession(priceType: 'monthly' | 'yearly'): Promise<{ url: string }> {
+    return fetchAPI<{ url: string }>('/billing/create-checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({ priceType }),
+    });
+  },
+
+  async createPortalSession(): Promise<{ url: string }> {
+    return fetchAPI<{ url: string }>('/billing/portal', {
+      method: 'POST',
     });
   },
 };

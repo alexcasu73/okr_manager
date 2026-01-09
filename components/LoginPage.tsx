@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Target, Loader2, AlertCircle } from 'lucide-react';
+import { Target, Loader2, AlertCircle, Building2 } from 'lucide-react';
 
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onNavigateToRegister?: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) => {
   const { login, error, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,16 +98,21 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Demo Credentials</p>
-            <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-600">
-              <span className="font-medium">Email:</span> admin@example.com
-            </p>
-            <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-slate-600">
-              <span className="font-medium">Password:</span> SecurePassword123!
-            </p>
-          </div>
+          {/* Register Link */}
+          {onNavigateToRegister && (
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-center text-sm text-slate-500 dark:text-slate-400 mb-3">
+                Sei un'azienda e vuoi gestire i tuoi OKR?
+              </p>
+              <button
+                onClick={onNavigateToRegister}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-semibold rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <Building2 className="w-5 h-5" />
+                Registra la tua Azienda
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
