@@ -387,7 +387,7 @@ const TeamPage: React.FC = () => {
           {/* Team Selector */}
           <div className="lg:col-span-1 min-h-0 overflow-hidden">
             <div className="h-full bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700 flex flex-col">
-              <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3">I tuoi Team</h3>
+              <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-3">Teams</h3>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {teams.map((team) => (
                   <button
