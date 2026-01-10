@@ -93,10 +93,10 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Get single team
+  // Get single team (admin can view any team)
   router.get('/:id', async (req, res, next) => {
     try {
-      const team = await getTeamById(pool, req.params.id, req.user.id);
+      const team = await getTeamById(pool, req.params.id, req.user.id, req.user.role);
       if (!team) {
         return res.status(404).json({ error: 'Team not found' });
       }
@@ -131,17 +131,17 @@ export function createTeamRoutes(config) {
         leadId = req.body.leadId;
       }
 
-      const team = await createTeam(pool, req.body, leadId);
+      const team = await createTeam(pool, req.body, leadId, req.user.role);
       res.status(201).json(team);
     } catch (error) {
       next(error);
     }
   });
 
-  // Update team
+  // Update team (admin can update any team)
   router.put('/:id', async (req, res, next) => {
     try {
-      const team = await updateTeam(pool, req.params.id, req.body, req.user.id);
+      const team = await updateTeam(pool, req.params.id, req.body, req.user.id, req.user.role);
       res.json(team);
     } catch (error) {
       if (error.message.includes('Not authorized')) {
@@ -151,10 +151,10 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Delete team
+  // Delete team (admin can delete any team)
   router.delete('/:id', async (req, res, next) => {
     try {
-      const deleted = await deleteTeam(pool, req.params.id, req.user.id);
+      const deleted = await deleteTeam(pool, req.params.id, req.user.id, req.user.role);
       if (!deleted) {
         return res.status(404).json({ error: 'Team not found' });
       }
@@ -169,10 +169,10 @@ export function createTeamRoutes(config) {
 
   // === TEAM MEMBERS ===
 
-  // Get team members
+  // Get team members (admin can view any team's members)
   router.get('/:id/members', async (req, res, next) => {
     try {
-      const members = await getTeamMembers(pool, req.params.id, req.user.id);
+      const members = await getTeamMembers(pool, req.params.id, req.user.id, req.user.role);
       res.json(members);
     } catch (error) {
       if (error.message.includes('Not a member')) {
@@ -182,7 +182,7 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Update member role
+  // Update member role (admin can update any team's members)
   router.put('/:teamId/members/:memberId', async (req, res, next) => {
     try {
       const result = await updateMemberRole(
@@ -190,7 +190,8 @@ export function createTeamRoutes(config) {
         req.params.teamId,
         req.params.memberId,
         req.body.role,
-        req.user.id
+        req.user.id,
+        req.user.role
       );
       res.json(result);
     } catch (error) {
@@ -201,14 +202,15 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Remove member
+  // Remove member (admin can remove from any team)
   router.delete('/:teamId/members/:memberId', async (req, res, next) => {
     try {
       const deleted = await removeMember(
         pool,
         req.params.teamId,
         req.params.memberId,
-        req.user.id
+        req.user.id,
+        req.user.role
       );
       if (!deleted) {
         return res.status(404).json({ error: 'Member not found' });
@@ -222,14 +224,14 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Search users to add to team
+  // Search users to add to team (admin can search for any team)
   router.get('/:id/users/search', async (req, res, next) => {
     try {
       const query = req.query.q || '';
       if (query.length < 2) {
         return res.json([]);
       }
-      const users = await searchUsers(pool, query, req.params.id, req.user.id);
+      const users = await searchUsers(pool, query, req.params.id, req.user.id, req.user.role);
       res.json(users);
     } catch (error) {
       if (error.message.includes('Not authorized')) {
@@ -239,7 +241,7 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Add member directly (without invitation)
+  // Add member directly (admin can add to any team)
   router.post('/:id/members', async (req, res, next) => {
     try {
       const member = await addMemberDirectly(
@@ -247,7 +249,8 @@ export function createTeamRoutes(config) {
         req.params.id,
         req.body.userId,
         req.body.role,
-        req.user.id
+        req.user.id,
+        req.user.role
       );
       res.status(201).json(member);
     } catch (error) {
@@ -266,10 +269,10 @@ export function createTeamRoutes(config) {
 
   // === INVITATIONS ===
 
-  // Get pending invitations for a team
+  // Get pending invitations for a team (admin can view any team's invitations)
   router.get('/:id/invitations', async (req, res, next) => {
     try {
-      const invitations = await getTeamInvitations(pool, req.params.id, req.user.id);
+      const invitations = await getTeamInvitations(pool, req.params.id, req.user.id, req.user.role);
       res.json(invitations);
     } catch (error) {
       if (error.message.includes('Not authorized')) {
@@ -279,7 +282,7 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Create invitation
+  // Create invitation (admin can invite to any team)
   router.post('/:id/invitations', async (req, res, next) => {
     try {
       const invitation = await createInvitation(
@@ -287,7 +290,8 @@ export function createTeamRoutes(config) {
         req.params.id,
         req.body,
         req.user.id,
-        { emailService, frontendUrl }
+        { emailService, frontendUrl },
+        req.user.role
       );
       res.status(201).json(invitation);
     } catch (error) {
@@ -301,10 +305,10 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Cancel invitation
+  // Cancel invitation (admin can cancel any invitation)
   router.delete('/invitations/:invitationId', async (req, res, next) => {
     try {
-      const cancelled = await cancelInvitation(pool, req.params.invitationId, req.user.id);
+      const cancelled = await cancelInvitation(pool, req.params.invitationId, req.user.id, req.user.role);
       if (!cancelled) {
         return res.status(404).json({ error: 'Invitation not found' });
       }
@@ -317,14 +321,15 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Resend invitation
+  // Resend invitation (admin can resend any invitation)
   router.post('/invitations/:invitationId/resend', async (req, res, next) => {
     try {
       const result = await resendInvitation(
         pool,
         req.params.invitationId,
         req.user.id,
-        { emailService, frontendUrl }
+        { emailService, frontendUrl },
+        req.user.role
       );
       res.json(result);
     } catch (error) {

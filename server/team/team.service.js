@@ -143,22 +143,39 @@ export async function getTeams(pool, userId, userRole) {
   return rows.map(transformTeam);
 }
 
-export async function getTeamById(pool, teamId, userId) {
-  const { rows } = await pool.query(`
-    SELECT t.*, u.name as owner_name, u.email as owner_email,
-           (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
-    FROM teams t
-    JOIN users u ON t.owner_id = u.id
-    WHERE t.id = $1 AND t.id IN (
-      SELECT team_id FROM team_members WHERE user_id = $2
-    )
-  `, [teamId, userId]);
+export async function getTeamById(pool, teamId, userId, userRole) {
+  let query;
+  let params;
 
+  if (userRole === 'admin') {
+    // Admin can view any team
+    query = `
+      SELECT t.*, u.name as owner_name, u.email as owner_email,
+             (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
+      FROM teams t
+      JOIN users u ON t.owner_id = u.id
+      WHERE t.id = $1
+    `;
+    params = [teamId];
+  } else {
+    query = `
+      SELECT t.*, u.name as owner_name, u.email as owner_email,
+             (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
+      FROM teams t
+      JOIN users u ON t.owner_id = u.id
+      WHERE t.id = $1 AND t.id IN (
+        SELECT team_id FROM team_members WHERE user_id = $2
+      )
+    `;
+    params = [teamId, userId];
+  }
+
+  const { rows } = await pool.query(query, params);
   if (rows.length === 0) return null;
   return transformTeam(rows[0]);
 }
 
-export async function createTeam(pool, data, userId) {
+export async function createTeam(pool, data, userId, userRole) {
   const { name, description } = data;
   const client = await pool.connect();
 
@@ -184,7 +201,7 @@ export async function createTeam(pool, data, userId) {
 
     await client.query('COMMIT');
 
-    return getTeamById(pool, team.id, userId);
+    return getTeamById(pool, team.id, userId, userRole);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -193,17 +210,20 @@ export async function createTeam(pool, data, userId) {
   }
 }
 
-export async function updateTeam(pool, teamId, data, userId) {
+export async function updateTeam(pool, teamId, data, userId, userRole) {
   const { name, description } = data;
 
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+  // System admin can update any team
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to update this team');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to update this team');
+    }
   }
 
   await pool.query(
@@ -212,19 +232,22 @@ export async function updateTeam(pool, teamId, data, userId) {
     [name, description, teamId]
   );
 
-  return getTeamById(pool, teamId, userId);
+  return getTeamById(pool, teamId, userId, userRole);
 }
 
-export async function deleteTeam(pool, teamId, userId) {
-  // Only owner can delete
-  const { rows } = await pool.query(
-    `SELECT owner_id FROM teams WHERE id = $1`,
-    [teamId]
-  );
+export async function deleteTeam(pool, teamId, userId, userRole) {
+  // System admin can delete any team
+  if (userRole !== 'admin') {
+    // Only team owner can delete
+    const { rows } = await pool.query(
+      `SELECT owner_id FROM teams WHERE id = $1`,
+      [teamId]
+    );
 
-  if (rows.length === 0) return false;
-  if (rows[0].owner_id !== userId) {
-    throw new Error('Only team owner can delete the team');
+    if (rows.length === 0) return false;
+    if (rows[0].owner_id !== userId) {
+      throw new Error('Only team owner can delete the team');
+    }
   }
 
   const result = await pool.query('DELETE FROM teams WHERE id = $1', [teamId]);
@@ -233,15 +256,18 @@ export async function deleteTeam(pool, teamId, userId) {
 
 // === TEAM MEMBERS ===
 
-export async function getTeamMembers(pool, teamId, userId) {
-  // Check if user is a member
-  const memberCheck = await pool.query(
-    `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function getTeamMembers(pool, teamId, userId, userRole) {
+  // System admin can view any team's members
+  if (userRole !== 'admin') {
+    // Check if user is a member
+    const memberCheck = await pool.query(
+      `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0) {
-    throw new Error('Not a member of this team');
+    if (memberCheck.rows.length === 0) {
+      throw new Error('Not a member of this team');
+    }
   }
 
   const { rows } = await pool.query(`
@@ -261,15 +287,18 @@ export async function getTeamMembers(pool, teamId, userId) {
   return rows.map(transformMember);
 }
 
-export async function updateMemberRole(pool, teamId, memberId, newRole, userId) {
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function updateMemberRole(pool, teamId, memberId, newRole, userId, userRole) {
+  // System admin can update any member role
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to update member roles');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to update member roles');
+    }
   }
 
   // Cannot change owner role
@@ -294,15 +323,18 @@ export async function updateMemberRole(pool, teamId, memberId, newRole, userId) 
   return { success: true };
 }
 
-export async function removeMember(pool, teamId, memberId, userId) {
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function removeMember(pool, teamId, memberId, userId, userRole) {
+  // System admin can remove any member
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to remove members');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to remove members');
+    }
   }
 
   // Cannot remove owner
@@ -329,18 +361,21 @@ export async function removeMember(pool, teamId, memberId, userId) {
 
 // === INVITATIONS ===
 
-export async function createInvitation(pool, teamId, data, userId, options = {}) {
+export async function createInvitation(pool, teamId, data, userId, options = {}, userRole) {
   const { email, role = 'member' } = data;
   const { emailService, frontendUrl } = options;
 
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+  // System admin can invite to any team
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to invite members');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to invite members');
+    }
   }
 
   // Check if already a member
@@ -402,15 +437,18 @@ export async function createInvitation(pool, teamId, data, userId, options = {})
   };
 }
 
-export async function getTeamInvitations(pool, teamId, userId) {
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function getTeamInvitations(pool, teamId, userId, userRole) {
+  // System admin can view any team's invitations
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to view invitations');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to view invitations');
+    }
   }
 
   const { rows } = await pool.query(`
@@ -438,7 +476,7 @@ export async function getPendingInvitationsForUser(pool, email) {
   return rows.map(transformInvitation);
 }
 
-export async function resendInvitation(pool, invitationId, userId, options = {}) {
+export async function resendInvitation(pool, invitationId, userId, options = {}, userRole) {
   const { emailService, frontendUrl } = options;
 
   // Get invitation details
@@ -456,14 +494,17 @@ export async function resendInvitation(pool, invitationId, userId, options = {})
 
   const invitation = rows[0];
 
-  // Check if user is owner or admin of the team
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [invitation.team_id, userId]
-  );
+  // System admin can resend any invitation
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [invitation.team_id, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to resend invitations');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to resend invitations');
+    }
   }
 
   // Update expiration date (extend by 7 more days)
@@ -680,7 +721,7 @@ export async function registerFromInvitation(pool, token, data, options = {}) {
   }
 }
 
-export async function cancelInvitation(pool, invitationId, userId) {
+export async function cancelInvitation(pool, invitationId, userId, userRole) {
   // Get invitation and check permissions
   const { rows } = await pool.query(`
     SELECT ti.team_id FROM team_invitations ti
@@ -691,13 +732,16 @@ export async function cancelInvitation(pool, invitationId, userId) {
     throw new Error('Invitation not found');
   }
 
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [rows[0].team_id, userId]
-  );
+  // System admin can cancel any invitation
+  if (userRole !== 'admin') {
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [rows[0].team_id, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to cancel invitations');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to cancel invitations');
+    }
   }
 
   const result = await pool.query(
@@ -710,15 +754,18 @@ export async function cancelInvitation(pool, invitationId, userId) {
 
 // === SEARCH USERS ===
 
-export async function searchUsers(pool, query, teamId, userId) {
-  // Check if user is owner or admin of the team
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function searchUsers(pool, query, teamId, userId, userRole) {
+  // System admin can search users for any team
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to search users');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to search users');
+    }
   }
 
   // Search users by name or email, excluding current team members
@@ -741,15 +788,18 @@ export async function searchUsers(pool, query, teamId, userId) {
 
 // === ADD MEMBER DIRECTLY ===
 
-export async function addMemberDirectly(pool, teamId, targetUserId, role, userId) {
-  // Check if user is owner or admin
-  const memberCheck = await pool.query(
-    `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
-    [teamId, userId]
-  );
+export async function addMemberDirectly(pool, teamId, targetUserId, role, userId, userRole) {
+  // System admin can add members to any team
+  if (userRole !== 'admin') {
+    // Check if user is team owner or team admin
+    const memberCheck = await pool.query(
+      `SELECT role FROM team_members WHERE team_id = $1 AND user_id = $2`,
+      [teamId, userId]
+    );
 
-  if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
-    throw new Error('Not authorized to add members');
+    if (memberCheck.rows.length === 0 || !['owner', 'admin'].includes(memberCheck.rows[0].role)) {
+      throw new Error('Not authorized to add members');
+    }
   }
 
   // Check if target user exists
