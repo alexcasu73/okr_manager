@@ -284,7 +284,10 @@ const TeamPage: React.FC = () => {
     m.userId === user?.id || m.odIduser === user?.id || m.email === user?.email
   );
   const currentUserRole = currentUserMember?.role;
-  const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
+  // System admin can manage any team, team owner/admin can manage their team
+  const isSystemAdmin = user?.role === 'admin';
+  const canManageTeam = isSystemAdmin || currentUserRole === 'owner' || currentUserRole === 'admin';
+  const canDeleteTeam = isSystemAdmin || currentUserRole === 'owner';
 
   if (isLoading) {
     return (
@@ -435,7 +438,7 @@ const TeamPage: React.FC = () => {
                           </button>
                         </>
                       )}
-                      {currentUserRole === 'owner' && (
+                      {canDeleteTeam && (
                         <button
                           onClick={() => openDeleteConfirmation(selectedTeam)}
                           className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-2 rounded-xl hover:bg-red-700 transition-colors text-sm"
