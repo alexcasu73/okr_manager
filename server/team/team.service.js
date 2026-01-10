@@ -110,18 +110,36 @@ function transformInvitation(row) {
 
 // === TEAMS ===
 
-export async function getTeams(pool, userId) {
-  const { rows } = await pool.query(`
-    SELECT t.*, u.name as owner_name, u.email as owner_email,
-           (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
-    FROM teams t
-    JOIN users u ON t.owner_id = u.id
-    WHERE t.id IN (
-      SELECT team_id FROM team_members WHERE user_id = $1
-    )
-    ORDER BY t.created_at DESC
-  `, [userId]);
+export async function getTeams(pool, userId, userRole) {
+  let query;
+  let params;
 
+  if (userRole === 'admin') {
+    // Admin sees all teams
+    query = `
+      SELECT t.*, u.name as owner_name, u.email as owner_email,
+             (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
+      FROM teams t
+      JOIN users u ON t.owner_id = u.id
+      ORDER BY t.created_at DESC
+    `;
+    params = [];
+  } else {
+    // Non-admin sees only teams they are a member of
+    query = `
+      SELECT t.*, u.name as owner_name, u.email as owner_email,
+             (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
+      FROM teams t
+      JOIN users u ON t.owner_id = u.id
+      WHERE t.id IN (
+        SELECT team_id FROM team_members WHERE user_id = $1
+      )
+      ORDER BY t.created_at DESC
+    `;
+    params = [userId];
+  }
+
+  const { rows } = await pool.query(query, params);
   return rows.map(transformTeam);
 }
 

@@ -83,10 +83,10 @@ export function createTeamRoutes(config) {
 
   // === TEAMS ===
 
-  // Get all teams for current user
+  // Get all teams for current user (admin sees all teams)
   router.get('/', async (req, res, next) => {
     try {
-      const teams = await getTeams(pool, req.user.id);
+      const teams = await getTeams(pool, req.user.id, req.user.role);
       res.json(teams);
     } catch (error) {
       next(error);
