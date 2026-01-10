@@ -23,6 +23,34 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     loadObjectives();
   }, []);
 
+  // Auto-refresh based on notification interval setting
+  useEffect(() => {
+    const getRefreshInterval = () => {
+      const saved = localStorage.getItem('okr_notification_refresh_interval');
+      return saved ? parseInt(saved, 10) * 60 * 1000 : 5 * 60 * 1000; // Default 5 min
+    };
+
+    let intervalId = setInterval(() => {
+      loadObjectives();
+    }, getRefreshInterval());
+
+    // Listen for setting changes
+    const handleIntervalChange = (e: CustomEvent) => {
+      clearInterval(intervalId);
+      const newInterval = e.detail * 60 * 1000;
+      intervalId = setInterval(() => {
+        loadObjectives();
+      }, newInterval);
+    };
+
+    window.addEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
+    };
+  }, []);
+
   const loadObjectives = async () => {
     setIsLoading(true);
     try {

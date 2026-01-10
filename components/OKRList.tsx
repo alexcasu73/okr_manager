@@ -38,6 +38,34 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     fetchObjectives();
   }, [fetchObjectives, refreshTrigger]);
 
+  // Auto-refresh based on notification interval setting
+  useEffect(() => {
+    const getRefreshInterval = () => {
+      const saved = localStorage.getItem('okr_notification_refresh_interval');
+      return saved ? parseInt(saved, 10) * 60 * 1000 : 5 * 60 * 1000; // Default 5 min
+    };
+
+    let intervalId = setInterval(() => {
+      fetchObjectives();
+    }, getRefreshInterval());
+
+    // Listen for setting changes
+    const handleIntervalChange = (e: CustomEvent) => {
+      clearInterval(intervalId);
+      const newInterval = e.detail * 60 * 1000;
+      intervalId = setInterval(() => {
+        fetchObjectives();
+      }, newInterval);
+    };
+
+    window.addEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
+    };
+  }, [fetchObjectives]);
+
   const filteredObjectives = objectives.filter(obj => {
     // Backend already filters by owner/contributor, just handle archived tab here
     // In 'archived' tab, show only archived OKRs
