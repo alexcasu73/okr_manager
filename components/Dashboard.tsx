@@ -45,8 +45,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     const pendingReview = objectives.filter(o => o.approvalStatus === 'pending_review').length;
     const approved = objectives.filter(o => o.approvalStatus === 'approved').length;
     const active = objectives.filter(o => o.approvalStatus === 'active').length;
+    const completed = objectives.filter(o => o.approvalStatus === 'completed').length;
 
-    return { total, avgProgress, draft, pendingReview, approved, active };
+    return { total, avgProgress, draft, pendingReview, approved, active, completed };
   }, [objectives]);
 
   // Status distribution for pie chart (based on approvalStatus)
