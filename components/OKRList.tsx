@@ -63,6 +63,18 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     ? ['all', 'company', 'team', 'individual', 'archived'] as const
     : ['all', 'team', 'individual', 'archived'] as const;
 
+  // Group objectives by team for the Team tab
+  const groupedByTeam = activeTab === 'team'
+    ? filteredObjectives.reduce((groups, obj) => {
+        const teamName = obj.teamName || 'Senza Team';
+        if (!groups[teamName]) {
+          groups[teamName] = [];
+        }
+        groups[teamName].push(obj);
+        return groups;
+      }, {} as Record<string, typeof filteredObjectives>)
+    : null;
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -134,7 +146,63 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                 Crea il tuo primo OKR
               </button>
             </div>
+          ) : activeTab === 'team' && groupedByTeam ? (
+            // Grouped view for Team tab
+            Object.entries(groupedByTeam).map(([teamName, teamObjectives]) => (
+              <div key={teamName} className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 px-1">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  {teamName}
+                  <span className="text-xs font-normal text-slate-400 dark:text-slate-500">({teamObjectives.length})</span>
+                </h3>
+                <div className="space-y-3 pl-4 border-l-2 border-blue-200 dark:border-blue-800">
+                  {teamObjectives.map((obj) => (
+                    <Card
+                      key={obj.id}
+                      className="transition-shadow hover:shadow-md cursor-pointer"
+                      onClick={() => onSelectOKR(obj.id)}
+                    >
+                      <div className="flex flex-col md:flex-row gap-5">
+                        {/* Left Side: Objective Info */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${(STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']).split(' ')[0].replace('100', '500')}`}></span>
+                              <div className="min-w-0">
+                                <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{obj.title}</h3>
+                                {obj.parentKeyResultDescription && (
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 truncate">
+                                    ↳ {obj.parentKeyResultDescription}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge className={STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']}>
+                                {STATUS_LABELS[obj.approvalStatus || 'draft'] || 'Bozza'}
+                              </Badge>
+                              <Badge className="capitalize">{obj.period}</Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400 mb-3">
+                            <span className="bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-medium text-gray-600 dark:text-slate-300">
+                              {obj.ownerId === currentUser.id ? 'Tu' : (obj.ownerName || obj.ownerId)}
+                            </span>
+                            <span>{obj.progress}%</span>
+                          </div>
+                          <ProgressBar
+                            value={obj.progress}
+                            color={PROGRESS_COLORS[obj.approvalStatus || 'draft'] ? `bg-[${PROGRESS_COLORS[obj.approvalStatus || 'draft']}]` : 'bg-blue-500'}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))
           ) : (
+            // Normal flat view
             filteredObjectives.map((obj) => (
             <Card
               key={obj.id}
@@ -171,11 +239,18 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                     {obj.description}
                   </p>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400 mb-5">
+                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400 mb-5 flex-wrap">
                     <div className="flex items-center gap-1.5">
                       <span className="bg-slate-100 dark:bg-slate-700 p-1.5 rounded-lg">{ICONS.Target}</span>
                       <span className="capitalize">{obj.level}</span>
                     </div>
+                    {obj.teamName && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-blue-100 dark:bg-blue-900/40 px-2.5 py-1 rounded-lg font-medium text-blue-600 dark:text-blue-400">
+                          {obj.teamName}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5">
                       <span className="bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-lg font-medium text-gray-600 dark:text-slate-300">
                         {obj.ownerId === currentUser.id ? 'Tu' : (obj.ownerName || obj.ownerId)}
