@@ -22,6 +22,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     try {
       setIsLoading(true);
       setError(null);
+      setObjectives([]); // Clear old data to avoid flash of wrong content
       // 'archived' tab fetches all and filters client-side, level tabs filter by level
       const filters = (activeTab !== 'all' && activeTab !== 'archived') ? { level: activeTab } : {};
       const data = await okrAPI.getObjectives(filters);
