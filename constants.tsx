@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Target,
   Users,
+  User,
   PieChart,
   Settings,
   LogOut,
@@ -38,6 +39,7 @@ export const ICONS = {
   Error: <XCircle size={16} />,
   Admin: <Shield size={20} />,
   Billing: <CreditCard size={20} />,
+  User: <User size={20} />,
 };
 
 // Colori per ApprovalStatus (flusso di approvazione)

@@ -94,7 +94,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     ...(user?.role === 'azienda' ? [{ id: 'admin', label: 'Gestione Utenti', icon: ICONS.Admin }] : []),
     // Billing - hidden (all companies are premium by default)
     // ...(user?.role === 'azienda' ? [{ id: 'billing', label: 'Subscription', icon: ICONS.Billing, suffix: isPremium ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : undefined }] : []),
-    { id: 'profile', label: 'Profilo', icon: ICONS.Settings },
+    // Settings - visible to all users except superadmin
+    ...(user?.role !== 'superadmin' ? [{ id: 'settings', label: 'Settings', icon: ICONS.Settings }] : []),
+    { id: 'profile', label: 'Profilo', icon: ICONS.User },
   ];
 
   const handleNavClick = (id: string) => {
