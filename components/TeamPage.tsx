@@ -100,7 +100,7 @@ const TeamPage: React.FC = () => {
     }
   };
 
-  const handleCreateTeam = async (data: { name: string; description?: string }) => {
+  const handleCreateTeam = async (data: { name: string; description?: string; leadId?: string }) => {
     try {
       const newTeam = await teamAPI.createTeam(data);
       setTeams([newTeam, ...teams]);
@@ -349,13 +349,15 @@ const TeamPage: React.FC = () => {
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Team</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gestisci membri e inviti</p>
         </div>
-        <button
-          onClick={() => setIsCreateTeamModalOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Nuovo Team
-        </button>
+        {(user?.role === 'admin' || user?.role === 'lead') && (
+          <button
+            onClick={() => setIsCreateTeamModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Nuovo Team
+          </button>
+        )}
       </div>
 
       {teams.length === 0 ? (
@@ -363,14 +365,18 @@ const TeamPage: React.FC = () => {
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-10 text-center shadow-sm dark:shadow-none dark:ring-1 dark:ring-slate-700">
             <Users className="w-14 h-14 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-2">Nessun team</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Crea il tuo primo team</p>
-            <button
-              onClick={() => setIsCreateTeamModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Nuovo Team
-            </button>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+              {(user?.role === 'admin' || user?.role === 'lead') ? 'Crea il tuo primo team' : 'Non fai parte di nessun team'}
+            </p>
+            {(user?.role === 'admin' || user?.role === 'lead') && (
+              <button
+                onClick={() => setIsCreateTeamModalOpen(true)}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Nuovo Team
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -565,6 +571,7 @@ const TeamPage: React.FC = () => {
         isOpen={isCreateTeamModalOpen}
         onClose={() => setIsCreateTeamModalOpen(false)}
         onCreate={handleCreateTeam}
+        userRole={user?.role}
       />
 
       <EditTeamModal

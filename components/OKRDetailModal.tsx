@@ -390,6 +390,29 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
     }
   };
 
+  const handleReopen = async () => {
+    if (!objectiveId || isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await okrAPI.reopenObjective(objectiveId);
+      if (isMounted.current) {
+        await loadObjective();
+        await loadApprovalHistory();
+      }
+      onUpdate();
+      window.dispatchEvent(new CustomEvent('okr-updated'));
+    } catch (err) {
+      if (isMounted.current) {
+        setError(err instanceof Error ? err.message : 'Errore nella riapertura');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
   const handleArchive = async () => {
     if (!objectiveId || isSaving) return;
     setIsSaving(true);
@@ -963,21 +986,29 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                     )}
                   </div>
 
-                  {/* Parent OKR Breadcrumb */}
-                  {objective.parentObjectiveId && objective.parentObjectiveTitle && (
-                    <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl mb-2">
-                      <GitBranch className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-slate-600 dark:text-slate-400">Collegato a:</span>
-                      {onSelectOKR ? (
-                        <button
-                          onClick={() => onSelectOKR(objective.parentObjectiveId!)}
-                          className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
-                        >
-                          {objective.parentObjectiveTitle}
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
-                      ) : (
-                        <span className="font-medium text-slate-900 dark:text-slate-100">{objective.parentObjectiveTitle}</span>
+                  {/* Parent KR Breadcrumb */}
+                  {objective.parentKeyResultId && objective.parentKeyResultDescription && (
+                    <div className="flex flex-col gap-1 text-sm bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl mb-2">
+                      <div className="flex items-center gap-2">
+                        <GitBranch className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-slate-600 dark:text-slate-400">Collegato al Key Result:</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{objective.parentKeyResultDescription}</span>
+                      </div>
+                      {objective.parentObjectiveTitle && (
+                        <div className="flex items-center gap-2 ml-6">
+                          <span className="text-slate-500 dark:text-slate-400 text-xs">dell'OKR:</span>
+                          {onSelectOKR ? (
+                            <button
+                              onClick={() => onSelectOKR(objective.parentObjectiveId!)}
+                              className="text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1 text-xs"
+                            >
+                              {objective.parentObjectiveTitle}
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <span className="font-medium text-slate-700 dark:text-slate-300 text-xs">{objective.parentObjectiveTitle}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -1179,6 +1210,19 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                         >
                           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4 mr-1" />}
                           Archivia
+                        </Button>
+                      )}
+
+                      {/* Only Admin can reopen closed or failed objectives */}
+                      {isAdmin && (objective.approvalStatus === 'closed' || objective.approvalStatus === 'failed') && (
+                        <Button
+                          size="sm"
+                          onClick={handleReopen}
+                          disabled={isSaving}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-1" />}
+                          Riapri
                         </Button>
                       )}
 
@@ -1444,7 +1488,14 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                           <select
                             className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 pl-4 pr-12 py-2 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                             value={newKR.metricType}
-                            onChange={e => setNewKR({...newKR, metricType: e.target.value as typeof newKR.metricType})}
+                            onChange={e => {
+                              const newType = e.target.value as typeof newKR.metricType;
+                              if (newType === 'boolean') {
+                                setNewKR({...newKR, metricType: newType, startValue: 0, targetValue: 1, currentValue: 0, unit: ''});
+                              } else {
+                                setNewKR({...newKR, metricType: newType});
+                              }
+                            }}
                             disabled={isSaving}
                           >
                             <option value="number">Numero</option>
@@ -1459,11 +1510,11 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                           </label>
                           <input
                             type="text"
-                            placeholder="Es: €, %, unità"
-                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={newKR.unit}
+                            placeholder={newKR.metricType === 'boolean' ? '-' : 'Es: €, %, unità'}
+                            className={`w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none ${newKR.metricType === 'boolean' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            value={newKR.metricType === 'boolean' ? '' : newKR.unit}
                             onChange={e => setNewKR({...newKR, unit: e.target.value})}
-                            disabled={isSaving}
+                            disabled={isSaving || newKR.metricType === 'boolean'}
                           />
                         </div>
                       </div>
@@ -1473,40 +1524,64 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Valore Iniziale
                           </label>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={newKR.startValue}
-                            onChange={e => setNewKR({...newKR, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
-                            disabled={isSaving}
-                          />
+                          {newKR.metricType === 'boolean' ? (
+                            <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-700 dark:text-slate-300 px-4 py-2">
+                              No
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                              value={newKR.startValue}
+                              onChange={e => setNewKR({...newKR, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
+                              disabled={isSaving}
+                            />
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Valore Target *
                           </label>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={newKR.targetValue}
-                            onChange={e => setNewKR({...newKR, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
-                            disabled={isSaving}
-                          />
+                          {newKR.metricType === 'boolean' ? (
+                            <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-700 dark:text-slate-300 px-4 py-2">
+                              Sì
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                              value={newKR.targetValue}
+                              onChange={e => setNewKR({...newKR, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
+                              disabled={isSaving}
+                            />
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Valore Attuale
                           </label>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            value={newKR.currentValue}
-                            onChange={e => setNewKR({...newKR, currentValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
-                            disabled={isSaving}
-                          />
+                          {newKR.metricType === 'boolean' ? (
+                            <select
+                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                              value={newKR.currentValue}
+                              onChange={e => setNewKR({...newKR, currentValue: parseFloat(e.target.value) || 0})}
+                              disabled={isSaving}
+                            >
+                              <option value={0}>No</option>
+                              <option value={1}>Sì</option>
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                              value={newKR.currentValue}
+                              onChange={e => setNewKR({...newKR, currentValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
+                              disabled={isSaving}
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -1587,7 +1662,9 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                     />
                                   </div>
                                   <span className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                                    {kr.currentValue} / {kr.targetValue} {kr.unit}
+                                    {kr.metricType === 'boolean'
+                                      ? (kr.currentValue === 1 ? 'Sì' : 'No')
+                                      : `${kr.currentValue} / ${kr.targetValue} ${kr.unit || ''}`}
                                   </span>
                                 </div>
                               </div>
@@ -1619,7 +1696,14 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                         <select
                                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 pl-4 pr-12 py-2 outline-none appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_16px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                                           value={editKRForm.metricType}
-                                          onChange={e => setEditKRForm({...editKRForm, metricType: e.target.value})}
+                                          onChange={e => {
+                                            const newType = e.target.value;
+                                            if (newType === 'boolean') {
+                                              setEditKRForm({...editKRForm, metricType: newType, startValue: 0, targetValue: 1, unit: ''});
+                                            } else {
+                                              setEditKRForm({...editKRForm, metricType: newType});
+                                            }
+                                          }}
                                           disabled={isSaving}
                                         >
                                           <option value="number">Numero</option>
@@ -1632,35 +1716,48 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unità</label>
                                         <input
                                           type="text"
-                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                          value={editKRForm.unit}
+                                          placeholder={editKRForm.metricType === 'boolean' ? '-' : ''}
+                                          className={`w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none ${editKRForm.metricType === 'boolean' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                          value={editKRForm.metricType === 'boolean' ? '' : editKRForm.unit}
                                           onChange={e => setEditKRForm({...editKRForm, unit: e.target.value})}
-                                          disabled={isSaving}
+                                          disabled={isSaving || editKRForm.metricType === 'boolean'}
                                         />
                                       </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                       <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Iniziale</label>
-                                        <input
-                                          type="text"
-                                          inputMode="decimal"
-                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                          value={editKRForm.startValue}
-                                          onChange={e => setEditKRForm({...editKRForm, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
-                                          disabled={isSaving}
-                                        />
+                                        {editKRForm.metricType === 'boolean' ? (
+                                          <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-700 dark:text-slate-300 px-4 py-2">
+                                            No
+                                          </div>
+                                        ) : (
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={editKRForm.startValue}
+                                            onChange={e => setEditKRForm({...editKRForm, startValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
+                                            disabled={isSaving}
+                                          />
+                                        )}
                                       </div>
                                       <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valore Target</label>
-                                        <input
-                                          type="text"
-                                          inputMode="decimal"
-                                          className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                          value={editKRForm.targetValue}
-                                          onChange={e => setEditKRForm({...editKRForm, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
-                                          disabled={isSaving}
-                                        />
+                                        {editKRForm.metricType === 'boolean' ? (
+                                          <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-700 dark:text-slate-300 px-4 py-2">
+                                            Sì
+                                          </div>
+                                        ) : (
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={editKRForm.targetValue}
+                                            onChange={e => setEditKRForm({...editKRForm, targetValue: parseFloat(e.target.value.replace(/^0+(?=\d)/, '')) || 0})}
+                                            disabled={isSaving}
+                                          />
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex justify-end gap-2">
@@ -1678,15 +1775,21 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                     <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
                                       <div>
                                         <span className="text-slate-500 dark:text-slate-400">Valore Iniziale</span>
-                                        <p className="font-medium text-slate-900 dark:text-slate-100">{kr.startValue} {kr.unit}</p>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                                          {kr.metricType === 'boolean' ? (kr.startValue === 1 ? 'Sì' : 'No') : `${kr.startValue} ${kr.unit || ''}`}
+                                        </p>
                                       </div>
                                       <div>
                                         <span className="text-slate-500 dark:text-slate-400">Valore Target</span>
-                                        <p className="font-medium text-slate-900 dark:text-slate-100">{kr.targetValue} {kr.unit}</p>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                                          {kr.metricType === 'boolean' ? (kr.targetValue === 1 ? 'Sì' : 'No') : `${kr.targetValue} ${kr.unit || ''}`}
+                                        </p>
                                       </div>
                                       <div>
                                         <span className="text-slate-500 dark:text-slate-400">Tipo Metrica</span>
-                                        <p className="font-medium text-slate-900 dark:text-slate-100 capitalize">{kr.metricType}</p>
+                                        <p className="font-medium text-slate-900 dark:text-slate-100 capitalize">
+                                          {kr.metricType === 'boolean' ? 'Sì/No' : kr.metricType}
+                                        </p>
                                       </div>
                                     </div>
 
@@ -1696,30 +1799,42 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Aggiorna Valore Attuale
                                           </label>
-                                          <input
-                                            type="text"
-                                            inputMode="decimal"
-                                            className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                            value={krUpdates[kr.id] !== undefined ? krUpdates[kr.id] : kr.currentValue}
-                                            onChange={e => {
-                                              const val = e.target.value;
-                                              if (val === '' || val === '-') {
-                                                setKrUpdates({ ...krUpdates, [kr.id]: val as any });
-                                              } else {
-                                                const num = parseFloat(val);
-                                                if (!isNaN(num)) {
-                                                  setKrUpdates({ ...krUpdates, [kr.id]: num });
+                                          {kr.metricType === 'boolean' ? (
+                                            <select
+                                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                              value={krUpdates[kr.id] !== undefined ? krUpdates[kr.id] : kr.currentValue}
+                                              onChange={e => setKrUpdates({ ...krUpdates, [kr.id]: parseFloat(e.target.value) })}
+                                              disabled={isSaving}
+                                            >
+                                              <option value={0}>No</option>
+                                              <option value={1}>Sì</option>
+                                            </select>
+                                          ) : (
+                                            <input
+                                              type="text"
+                                              inputMode="decimal"
+                                              className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-xl text-slate-900 dark:text-slate-100 px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                              value={krUpdates[kr.id] !== undefined ? krUpdates[kr.id] : kr.currentValue}
+                                              onChange={e => {
+                                                const val = e.target.value;
+                                                if (val === '' || val === '-') {
+                                                  setKrUpdates({ ...krUpdates, [kr.id]: val as any });
+                                                } else {
+                                                  const num = parseFloat(val);
+                                                  if (!isNaN(num)) {
+                                                    setKrUpdates({ ...krUpdates, [kr.id]: num });
+                                                  }
                                                 }
-                                              }
-                                            }}
-                                            onBlur={e => {
-                                              const val = e.target.value;
-                                              if (val === '' || val === '-') {
-                                                setKrUpdates({ ...krUpdates, [kr.id]: 0 });
-                                              }
-                                            }}
-                                            disabled={isSaving}
-                                          />
+                                              }}
+                                              onBlur={e => {
+                                                const val = e.target.value;
+                                                if (val === '' || val === '-') {
+                                                  setKrUpdates({ ...krUpdates, [kr.id]: 0 });
+                                                }
+                                              }}
+                                              disabled={isSaving}
+                                            />
+                                          )}
                                         </div>
                                         <Button
                                           onClick={() => handleUpdateKR(kr.id)}

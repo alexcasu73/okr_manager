@@ -21,6 +21,8 @@ function transformObjective(row, keyResults = []) {
     // Hierarchy fields
     parentObjectiveId: row.parent_objective_id || null,
     parentObjectiveTitle: row.parent_objective_title || null,
+    parentKeyResultId: row.parent_key_result_id || null,
+    parentKeyResultDescription: row.parent_key_result_description || null,
     teamId: row.team_id || null,
     teamName: row.team_name || null,
     // Approval workflow fields
@@ -293,12 +295,14 @@ export async function getObjectives(pool, filters = {}) {
     SELECT DISTINCT o.*,
            u.name as owner_name,
            parent.title as parent_objective_title,
+           parent_kr.description as parent_key_result_description,
            t.name as team_name,
            approver.name as approved_by_name,
            (SELECT COUNT(*) FROM objectives child WHERE child.parent_objective_id = o.id) as children_count
     FROM objectives o
     JOIN users u ON o.owner_id = u.id
     LEFT JOIN objectives parent ON o.parent_objective_id = parent.id
+    LEFT JOIN key_results parent_kr ON o.parent_key_result_id = parent_kr.id
     LEFT JOIN teams t ON o.team_id = t.id
     LEFT JOIN users approver ON o.approved_by = approver.id
     LEFT JOIN objective_contributors oc ON o.id = oc.objective_id
@@ -368,12 +372,14 @@ export async function getObjectiveById(pool, id) {
     `SELECT o.*,
             u.name as owner_name,
             parent.title as parent_objective_title,
+            parent_kr.description as parent_key_result_description,
             t.name as team_name,
             approver.name as approved_by_name,
             (SELECT COUNT(*) FROM objectives child WHERE child.parent_objective_id = o.id) as children_count
      FROM objectives o
      JOIN users u ON o.owner_id = u.id
      LEFT JOIN objectives parent ON o.parent_objective_id = parent.id
+     LEFT JOIN key_results parent_kr ON o.parent_key_result_id = parent_kr.id
      LEFT JOIN teams t ON o.team_id = t.id
      LEFT JOIN users approver ON o.approved_by = approver.id
      WHERE o.id = $1`,
@@ -391,7 +397,7 @@ export async function getObjectiveById(pool, id) {
 }
 
 export async function createObjective(pool, data, userId) {
-  const { title, description, level, period, dueDate, keyResults = [], ownerId, parentObjectiveId, teamId } = data;
+  const { title, description, level, period, dueDate, keyResults = [], ownerId, parentKeyResultId, teamId } = data;
 
   // Use provided ownerId or default to creating user
   const objectiveOwnerId = ownerId || userId;
@@ -400,28 +406,30 @@ export async function createObjective(pool, data, userId) {
   try {
     await client.query('BEGIN');
 
-    // Parent OKR is mandatory for team and individual levels
-    if (level === 'team' && !parentObjectiveId) {
-      throw new Error('Gli OKR di livello Team devono avere un OKR Azienda come parent');
+    // Parent KR is mandatory for team and individual levels
+    if (level === 'team' && !parentKeyResultId) {
+      throw new Error('Gli OKR di livello Team devono essere collegati a un Key Result di un OKR Azienda');
     }
-    if (level === 'individual' && !parentObjectiveId) {
-      throw new Error('Gli OKR di livello Individuale devono avere un OKR Team come parent');
+    if (level === 'individual' && !parentKeyResultId) {
+      throw new Error('Gli OKR di livello Individuale devono essere collegati a un Key Result di un OKR Team');
     }
 
-    // Validate parent-child hierarchy if parentObjectiveId is provided
-    if (parentObjectiveId) {
-      const validation = await validateParentChild(client, level, parentObjectiveId);
+    // Validate and get parent objective from the selected KR
+    let parentObjectiveId = null;
+    if (parentKeyResultId) {
+      const validation = await validateParentKeyResult(client, level, parentKeyResultId);
       if (!validation.valid) {
         throw new Error(validation.error);
       }
+      parentObjectiveId = validation.parentObjectiveId;
     }
 
     // Create objective
     const { rows } = await client.query(
-      `INSERT INTO objectives (title, description, owner_id, level, period, due_date, status, parent_objective_id, team_id, approval_status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, 'draft')
+      `INSERT INTO objectives (title, description, owner_id, level, period, due_date, status, parent_objective_id, parent_key_result_id, team_id, approval_status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, 'draft')
        RETURNING *`,
-      [title, description, objectiveOwnerId, level, period, dueDate, parentObjectiveId || null, teamId || null]
+      [title, description, objectiveOwnerId, level, period, dueDate, parentObjectiveId, parentKeyResultId || null, teamId || null]
     );
 
     const objective = rows[0];
@@ -490,6 +498,49 @@ async function validateParentChild(client, childLevel, parentId) {
   return { valid: true };
 }
 
+// Validate parent Key Result and return its objective
+// Checks that the KR belongs to an objective of the correct parent level
+async function validateParentKeyResult(client, childLevel, parentKeyResultId) {
+  const { rows } = await client.query(
+    `SELECT kr.id, kr.objective_id, o.level as objective_level, o.title as objective_title
+     FROM key_results kr
+     JOIN objectives o ON kr.objective_id = o.id
+     WHERE kr.id = $1`,
+    [parentKeyResultId]
+  );
+
+  if (rows.length === 0) {
+    return { valid: false, error: 'Key Result parent non trovato' };
+  }
+
+  const parentObjectiveLevel = rows[0].objective_level;
+  const parentObjectiveId = rows[0].objective_id;
+
+  // Strict hierarchy enforcement based on KR's objective level
+  if (childLevel === 'team') {
+    if (parentObjectiveLevel !== 'company') {
+      return {
+        valid: false,
+        error: 'Gli OKR di livello Team devono essere collegati a un Key Result di un OKR Azienda'
+      };
+    }
+  } else if (childLevel === 'individual') {
+    if (parentObjectiveLevel !== 'team') {
+      return {
+        valid: false,
+        error: 'Gli OKR di livello Individuale devono essere collegati a un Key Result di un OKR Team'
+      };
+    }
+  } else if (childLevel === 'company') {
+    return {
+      valid: false,
+      error: 'Gli OKR di livello Azienda non possono avere un parent'
+    };
+  }
+
+  return { valid: true, parentObjectiveId };
+}
+
 export async function updateObjective(pool, id, data, userId) {
   const { title, description, level, period, dueDate, status, parentObjectiveId, teamId } = data;
   // Handle ownerId - convert empty string to null/undefined
@@ -553,6 +604,26 @@ export async function deleteObjective(pool, id) {
     throw new Error('Non è possibile eliminare un OKR in questo stato');
   }
 
+  // Find all child OKRs linked to this objective's KRs and delete them recursively
+  const { rows: keyResults } = await pool.query(
+    'SELECT id FROM key_results WHERE objective_id = $1',
+    [id]
+  );
+
+  for (const kr of keyResults) {
+    // Find all child objectives linked to this KR
+    const { rows: childObjectives } = await pool.query(
+      'SELECT id FROM objectives WHERE parent_key_result_id = $1',
+      [kr.id]
+    );
+
+    // Recursively delete each child objective
+    for (const child of childObjectives) {
+      await deleteObjective(pool, child.id);
+    }
+  }
+
+  // Now delete the objective itself (KRs will be deleted by CASCADE)
   const { rowCount } = await pool.query(
     'DELETE FROM objectives WHERE id = $1',
     [id]
@@ -686,7 +757,7 @@ async function updateObjectiveProgress(pool, objectiveId) {
   const progress = calculateProgress(keyResults);
 
   const { rows: objective } = await pool.query(
-    'SELECT due_date, created_at FROM objectives WHERE id = $1',
+    'SELECT due_date, created_at, approval_status FROM objectives WHERE id = $1',
     [objectiveId]
   );
 
@@ -699,6 +770,94 @@ async function updateObjectiveProgress(pool, objectiveId) {
     `UPDATE objectives SET progress = $1, status = $2, updated_at = NOW() WHERE id = $3`,
     [progress, status, objectiveId]
   );
+
+  // Auto-update approval_status based on completion
+  const currentApprovalStatus = objective[0]?.approval_status;
+
+  // If OKR is active and reaches 100%, mark as closed
+  if (currentApprovalStatus === 'active' && progress >= 100) {
+    await pool.query(
+      `UPDATE objectives SET approval_status = 'closed', updated_at = NOW() WHERE id = $1`,
+      [objectiveId]
+    );
+    // Log to approval history
+    await pool.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       SELECT $1, 'closed', owner_id, 'Obiettivo raggiunto - chiuso automaticamente'
+       FROM objectives WHERE id = $1`,
+      [objectiveId]
+    );
+  }
+
+  // If OKR is active, not completed, and past due date, mark as failed
+  if (currentApprovalStatus === 'active' && progress < 100 && objective[0]?.due_date) {
+    const dueDate = new Date(objective[0].due_date);
+    const now = new Date();
+    if (dueDate < now) {
+      await pool.query(
+        `UPDATE objectives SET approval_status = 'failed', updated_at = NOW() WHERE id = $1`,
+        [objectiveId]
+      );
+      // Log to approval history
+      await pool.query(
+        `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+         SELECT $1, 'failed', owner_id, 'Obiettivo non raggiunto entro la scadenza'
+         FROM objectives WHERE id = $1`,
+        [objectiveId]
+      );
+    }
+  }
+
+  // If this OKR has a parent KR and is completed, check if all sibling child OKRs are completed
+  await updateParentKeyResultIfAllChildrenComplete(pool, objectiveId);
+}
+
+/**
+ * Update parent KR progress based on average progress of child OKRs.
+ */
+async function updateParentKeyResultIfAllChildrenComplete(pool, objectiveId) {
+  // Get the parent_key_result_id of this objective
+  const { rows: objRows } = await pool.query(
+    'SELECT parent_key_result_id FROM objectives WHERE id = $1',
+    [objectiveId]
+  );
+
+  const parentKrId = objRows[0]?.parent_key_result_id;
+  if (!parentKrId) return;
+
+  // Get all child OKRs linked to this parent KR
+  const { rows: childOkrs } = await pool.query(
+    `SELECT id, progress FROM objectives WHERE parent_key_result_id = $1`,
+    [parentKrId]
+  );
+
+  if (childOkrs.length === 0) return;
+
+  // Calculate average progress of all child OKRs
+  const avgProgress = childOkrs.reduce((sum, child) => sum + (child.progress || 0), 0) / childOkrs.length;
+
+  // Get parent KR details
+  const { rows: krRows } = await pool.query(
+    'SELECT id, start_value, target_value, objective_id FROM key_results WHERE id = $1',
+    [parentKrId]
+  );
+
+  if (krRows.length > 0) {
+    const kr = krRows[0];
+    const startValue = parseFloat(kr.start_value) || 0;
+    const targetValue = parseFloat(kr.target_value);
+
+    // Calculate new current value based on average progress
+    const newCurrentValue = startValue + ((targetValue - startValue) * avgProgress / 100);
+
+    await pool.query(
+      `UPDATE key_results SET current_value = $1, updated_at = NOW() WHERE id = $2`,
+      [Math.round(newCurrentValue * 100) / 100, parentKrId]
+    );
+
+    // Update the parent objective's progress
+    await updateObjectiveProgress(pool, kr.objective_id);
+  }
 }
 
 // === ANALYTICS ===
@@ -867,17 +1026,17 @@ export async function getObjectiveChildren(pool, parentId) {
 }
 
 /**
- * Get available parent objectives for a given level
- * Returns objectives that can be valid parents based on strict hierarchy rules:
+ * Get available parent Key Results for a given level
+ * Returns KRs from objectives of the valid parent level:
  * - Company: no parents
- * - Team: only company parents
- * - Individual: only team parents
+ * - Team: KRs from company objectives
+ * - Individual: KRs from team objectives
  */
 export async function getAvailableParents(pool, level, excludeId = null) {
   const levelHierarchy = {
     'company': [],           // Company can't have parents
-    'team': ['company'],     // Team must have company parent
-    'individual': ['team']   // Individual must have team parent
+    'team': ['company'],     // Team must link to company KRs
+    'individual': ['team']   // Individual must link to team KRs
   };
 
   const validParentLevels = levelHierarchy[level] || [];
@@ -887,11 +1046,14 @@ export async function getAvailableParents(pool, level, excludeId = null) {
   }
 
   let query = `
-    SELECT o.id, o.title, o.level, o.period, o.status, o.progress,
+    SELECT kr.id, kr.description, kr.objective_id,
+           o.title as objective_title, o.level as objective_level, o.period,
            u.name as owner_name
-    FROM objectives o
+    FROM key_results kr
+    JOIN objectives o ON kr.objective_id = o.id
     JOIN users u ON o.owner_id = u.id
     WHERE o.level = ANY($1)
+      AND o.approval_status NOT IN ('archived', 'closed', 'failed')
   `;
   const params = [validParentLevels];
 
@@ -900,17 +1062,17 @@ export async function getAvailableParents(pool, level, excludeId = null) {
     params.push(excludeId);
   }
 
-  query += ` ORDER BY o.level, o.period DESC, o.title`;
+  query += ` ORDER BY o.period DESC, o.title, kr.description`;
 
   const { rows } = await pool.query(query, params);
 
   return rows.map(row => ({
     id: row.id,
-    title: row.title,
-    level: row.level,
+    description: row.description,
+    objectiveId: row.objective_id,
+    objectiveTitle: row.objective_title,
+    objectiveLevel: row.objective_level,
     period: row.period,
-    status: row.status,
-    progress: row.progress,
     ownerName: row.owner_name
   }));
 }
@@ -1373,6 +1535,52 @@ export async function stopObjective(pool, objectiveId, userId, comment = null) {
 }
 
 /**
+ * Reopen a closed or failed objective (admin only)
+ */
+export async function reopenObjective(pool, objectiveId, userId, comment = null) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(
+      'SELECT approval_status FROM objectives WHERE id = $1',
+      [objectiveId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Objective not found');
+    }
+
+    const currentStatus = rows[0].approval_status;
+    if (!['closed', 'failed'].includes(currentStatus)) {
+      throw new Error(`Non è possibile riaprire: stato attuale è ${currentStatus}`);
+    }
+
+    await client.query(
+      `UPDATE objectives
+       SET approval_status = 'active',
+           updated_at = NOW()
+       WHERE id = $1`,
+      [objectiveId]
+    );
+
+    await client.query(
+      `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+       VALUES ($1, 'reopened', $2, $3)`,
+      [objectiveId, userId, comment || 'Riaperto dall\'amministratore']
+    );
+
+    await client.query('COMMIT');
+    return getObjectiveById(pool, objectiveId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Archive a stopped objective
  */
 export async function archiveObjective(pool, objectiveId, userId, comment = null) {
@@ -1460,25 +1668,26 @@ export async function revertToDraft(pool, objectiveId, userId, comment = null) {
 }
 
 /**
- * Auto-stop objectives that have passed their due date
+ * Auto-fail objectives that have passed their due date without being completed
  * Called periodically or on objective load
  */
-export async function autoStopExpiredObjectives(pool) {
+export async function autoFailExpiredObjectives(pool) {
   const { rows } = await pool.query(
     `UPDATE objectives
-     SET approval_status = 'stopped',
+     SET approval_status = 'failed',
          updated_at = NOW()
      WHERE approval_status = 'active'
        AND due_date IS NOT NULL
        AND due_date < CURRENT_DATE
+       AND progress < 100
      RETURNING id`
   );
 
-  // Log auto-stop in history (using system user or null)
+  // Log auto-fail in history
   for (const row of rows) {
     await pool.query(
       `INSERT INTO approval_history (objective_id, action, performed_by, comment)
-       SELECT $1, 'stopped', owner_id, 'Fermato automaticamente per scadenza'
+       SELECT $1, 'failed', owner_id, 'Obiettivo non raggiunto entro la scadenza'
        FROM objectives WHERE id = $1`,
       [row.id]
     );

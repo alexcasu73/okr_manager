@@ -49,6 +49,8 @@ export const STATUS_COLORS: Record<string, string> = {
   'paused': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
   'stopped': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
   'archived': 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  'closed': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+  'failed': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
   // Fallback per vecchi valori
   'on-track': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
   'at-risk': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
@@ -64,6 +66,8 @@ export const PROGRESS_COLORS: Record<string, string> = {
   'paused': '#F97316',
   'stopped': '#EF4444',
   'archived': '#6B7280',
+  'closed': '#3B82F6',
+  'failed': '#EF4444',
   // Fallback per vecchi valori
   'on-track': '#10B981',
   'at-risk': '#F59E0B',
@@ -79,4 +83,6 @@ export const STATUS_LABELS: Record<string, string> = {
   'paused': 'In pausa',
   'stopped': 'Fermato',
   'archived': 'Archiviato',
+  'closed': 'Chiuso',
+  'failed': 'Fallito',
 };

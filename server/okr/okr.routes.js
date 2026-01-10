@@ -28,9 +28,10 @@ import {
   pauseObjective,
   resumeObjective,
   stopObjective,
+  reopenObjective,
   archiveObjective,
   revertToDraft,
-  autoStopExpiredObjectives,
+  autoFailExpiredObjectives,
   getApprovalHistory,
   getPendingApprovals,
   // Contributors functions
@@ -97,8 +98,8 @@ export function createOKRRoutes(config) {
   // Multi-tenant: filters by company_id for tenant isolation
   router.get('/objectives', async (req, res, next) => {
     try {
-      // Auto-stop expired objectives before fetching
-      await autoStopExpiredObjectives(pool);
+      // Auto-fail expired objectives before fetching
+      await autoFailExpiredObjectives(pool);
 
       const { level, period, status, mine } = req.query;
       const filters = { level, period, status };
@@ -597,6 +598,29 @@ export function createOKRRoutes(config) {
       }
 
       const objective = await stopObjective(pool, req.params.id, req.user.id, req.body.comment);
+      res.json(objective);
+    } catch (error) {
+      if (error.message.includes('Non è possibile')) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Reopen a closed or failed objective (admin only)
+  router.post('/objectives/:id/reopen', async (req, res, next) => {
+    try {
+      // Only admin can reopen
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Solo gli amministratori possono riaprire gli OKR' });
+      }
+
+      const existing = await getObjectiveById(pool, req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: 'Objective not found' });
+      }
+
+      const objective = await reopenObjective(pool, req.params.id, req.user.id, req.body.comment);
       res.json(objective);
     } catch (error) {
       if (error.message.includes('Non è possibile')) {

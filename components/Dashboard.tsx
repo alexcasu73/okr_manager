@@ -74,7 +74,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
 
     return [
       { name: 'Azienda', value: counts['company'] || 0, icon: Building2, color: 'bg-purple-100 text-purple-600' },
-      { name: 'Dipartimento', value: counts['department'] || 0, icon: Users, color: 'bg-blue-100 text-blue-600' },
       { name: 'Team', value: counts['team'] || 0, icon: Users, color: 'bg-green-100 text-green-600' },
       { name: 'Individuale', value: counts['individual'] || 0, icon: UserIcon, color: 'bg-orange-100 text-orange-600' },
     ];

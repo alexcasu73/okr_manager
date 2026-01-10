@@ -139,18 +139,27 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
               <div className="flex flex-col md:flex-row gap-5">
                 {/* Left Side: Objective Info */}
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className={`w-2.5 h-2.5 rounded-full ${(STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']).split(' ')[0].replace('100', '500')}`}></span>
-                      <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{obj.title}</h3>
-                      <Badge className={`ml-2 ${STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']}`}>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${(STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']).split(' ')[0].replace('100', '500')}`}></span>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{obj.title}</h3>
+                        {obj.parentKeyResultDescription && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 truncate">
+                            ↳ {obj.parentKeyResultDescription}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge className={STATUS_COLORS[obj.approvalStatus || 'draft'] || STATUS_COLORS['draft']}>
                         {STATUS_LABELS[obj.approvalStatus || 'draft'] || 'Bozza'}
                       </Badge>
                       <Badge className="capitalize">{obj.period}</Badge>
+                      <button className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300">
+                        {ICONS.More}
+                      </button>
                     </div>
-                    <button className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 dark:text-slate-600">
-                      {ICONS.More}
-                    </button>
                   </div>
 
                   <p className="text-gray-500 dark:text-slate-400 text-sm mb-4 line-clamp-2">
@@ -200,7 +209,11 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
                                 style={{ width: `${krProgress}%` }}
                               ></div>
                             </div>
-                            <span>{kr.currentValue} / {kr.targetValue} {kr.unit}</span>
+                            <span>
+                              {kr.metricType === 'boolean'
+                                ? (kr.currentValue === 1 ? 'Sì' : 'No')
+                                : `${kr.currentValue} / ${kr.targetValue} ${kr.unit || ''}`}
+                            </span>
                           </div>
                         </div>
                       );

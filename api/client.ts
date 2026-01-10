@@ -251,7 +251,7 @@ export interface KeyResult {
 }
 
 export type OKRLevel = 'company' | 'department' | 'team' | 'individual';
-export type ApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'active';
+export type ApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'active' | 'paused' | 'stopped' | 'archived' | 'closed' | 'failed';
 
 export interface Objective {
   id: string;
@@ -271,6 +271,8 @@ export interface Objective {
   // Hierarchy fields
   parentObjectiveId?: string | null;
   parentObjectiveTitle?: string | null;
+  parentKeyResultId?: string | null;
+  parentKeyResultDescription?: string | null;
   teamId?: string | null;
   teamName?: string | null;
   childrenCount?: number;
@@ -283,6 +285,17 @@ export interface Objective {
   approvedAt?: string | null;
 }
 
+export interface ParentKeyResult {
+  id: string;
+  description: string;
+  objectiveId: string;
+  objectiveTitle: string;
+  objectiveLevel: OKRLevel;
+  period: string;
+  ownerName: string;
+}
+
+// Legacy - kept for backward compatibility
 export interface ParentObjective {
   id: string;
   title: string;
@@ -331,8 +344,8 @@ export interface CreateObjectiveData {
   ownerId?: string;
   status?: 'on-track' | 'at-risk' | 'off-track' | 'completed' | 'draft';
   keyResults?: Omit<KeyResult, 'id' | 'status' | 'confidence'>[];
-  // Hierarchy fields
-  parentObjectiveId?: string | null;
+  // Hierarchy fields - now links to parent KR instead of parent OKR
+  parentKeyResultId?: string | null;
   teamId?: string | null;
 }
 
@@ -430,11 +443,11 @@ export const okrAPI = {
     return fetchAPI<Objective[]>(`/okr/hierarchy${params}`);
   },
 
-  // Get available parent objectives for a given level
-  async getAvailableParents(level: OKRLevel, excludeId?: string): Promise<ParentObjective[]> {
+  // Get available parent Key Results for a given level
+  async getAvailableParents(level: OKRLevel, excludeId?: string): Promise<ParentKeyResult[]> {
     const params = new URLSearchParams({ level });
     if (excludeId) params.set('excludeId', excludeId);
-    return fetchAPI<ParentObjective[]>(`/okr/available-parents?${params}`);
+    return fetchAPI<ParentKeyResult[]>(`/okr/available-parents?${params}`);
   },
 
   // Get children of an objective
@@ -503,6 +516,14 @@ export const okrAPI = {
   // Stop an objective permanently
   async stopObjective(objectiveId: string, comment?: string): Promise<Objective> {
     return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ comment }),
+    });
+  },
+
+  // Reopen a closed or failed objective (admin only)
+  async reopenObjective(objectiveId: string, comment?: string): Promise<Objective> {
+    return fetchAPI<Objective>(`/okr/objectives/${objectiveId}/reopen`, {
       method: 'POST',
       body: JSON.stringify({ comment }),
     });
@@ -620,7 +641,7 @@ export const teamAPI = {
     return fetchAPI<Team>(`/teams/${id}`);
   },
 
-  async createTeam(data: { name: string; description?: string }): Promise<Team> {
+  async createTeam(data: { name: string; description?: string; leadId?: string }): Promise<Team> {
     return fetchAPI<Team>('/teams', {
       method: 'POST',
       body: JSON.stringify(data),

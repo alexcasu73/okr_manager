@@ -106,10 +106,32 @@ export function createTeamRoutes(config) {
     }
   });
 
-  // Create team
+  // Create team (admin or lead only)
   router.post('/', async (req, res, next) => {
     try {
-      const team = await createTeam(pool, req.body, req.user.id);
+      // Only admin and lead can create teams
+      if (!['admin', 'lead'].includes(req.user.role)) {
+        return res.status(403).json({ error: 'Solo amministratori e lead possono creare team' });
+      }
+
+      let leadId;
+
+      if (req.user.role === 'lead') {
+        // Lead creates team for themselves
+        leadId = req.user.id;
+      } else {
+        // Admin must assign a lead
+        if (!req.body.leadId) {
+          return res.status(400).json({ error: 'È necessario assegnare un lead al team' });
+        }
+        // Admin cannot create a team for themselves
+        if (req.body.leadId === req.user.id) {
+          return res.status(400).json({ error: 'Non puoi creare un team per te stesso' });
+        }
+        leadId = req.body.leadId;
+      }
+
+      const team = await createTeam(pool, req.body, leadId);
       res.status(201).json(team);
     } catch (error) {
       next(error);

@@ -165,8 +165,9 @@ async function migrateHierarchyFields(pool) {
     // Check and add columns to objectives table
     const objectiveColumns = [
       { name: 'parent_objective_id', type: 'UUID REFERENCES objectives(id) ON DELETE SET NULL' },
+      { name: 'parent_key_result_id', type: 'UUID REFERENCES key_results(id) ON DELETE SET NULL' },
       { name: 'team_id', type: 'UUID REFERENCES teams(id) ON DELETE SET NULL' },
-      { name: 'approval_status', type: "VARCHAR(50) DEFAULT 'draft' CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active', 'paused', 'stopped', 'archived'))" },
+      { name: 'approval_status', type: "VARCHAR(50) DEFAULT 'draft' CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active', 'paused', 'stopped', 'archived', 'closed', 'failed'))" },
       { name: 'approved_by', type: 'UUID REFERENCES users(id)' },
       { name: 'approved_at', type: 'TIMESTAMP WITH TIME ZONE' }
     ];
@@ -213,6 +214,7 @@ async function createHierarchyIndexes(pool) {
   try {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_objectives_parent ON objectives(parent_objective_id);
+      CREATE INDEX IF NOT EXISTS idx_objectives_parent_kr ON objectives(parent_key_result_id);
       CREATE INDEX IF NOT EXISTS idx_objectives_team ON objectives(team_id);
       CREATE INDEX IF NOT EXISTS idx_objectives_approval ON objectives(approval_status);
       CREATE INDEX IF NOT EXISTS idx_teams_type ON teams(type);
@@ -228,11 +230,24 @@ async function createHierarchyIndexes(pool) {
     await pool.query(`
       ALTER TABLE approval_history DROP CONSTRAINT IF EXISTS approval_history_action_check;
       ALTER TABLE approval_history ADD CONSTRAINT approval_history_action_check
-        CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated', 'paused', 'resumed', 'stopped', 'archived', 'reverted_to_draft'));
+        CHECK (action IN ('submitted', 'approved', 'rejected', 'returned', 'activated', 'paused', 'resumed', 'stopped', 'archived', 'reverted_to_draft', 'closed', 'failed', 'reopened'));
     `);
     console.log('Updated approval_history action constraint');
   } catch (error) {
     console.error('Constraint update error:', error.message);
+    // Non-fatal: constraint may already be correct
+  }
+
+  // Update approval_status constraint to include closed and failed
+  try {
+    await pool.query(`
+      ALTER TABLE objectives DROP CONSTRAINT IF EXISTS objectives_approval_status_check;
+      ALTER TABLE objectives ADD CONSTRAINT objectives_approval_status_check
+        CHECK (approval_status IN ('draft', 'pending_review', 'approved', 'active', 'paused', 'stopped', 'archived', 'closed', 'failed'));
+    `);
+    console.log('Updated objectives approval_status constraint');
+  } catch (error) {
+    console.error('Approval status constraint update error:', error.message);
     // Non-fatal: constraint may already be correct
   }
 }

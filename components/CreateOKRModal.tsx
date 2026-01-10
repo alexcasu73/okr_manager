@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './UIComponents';
 import { ICONS } from '../constants';
-import { okrAPI, CreateObjectiveData, UserBasic, ParentObjective, OKRLevel, subscriptionAPI, SubscriptionInfo, CanCreateOKRResult } from '../api/client';
+import { okrAPI, CreateObjectiveData, UserBasic, ParentKeyResult, OKRLevel, subscriptionAPI, SubscriptionInfo, CanCreateOKRResult } from '../api/client';
 import { Loader2, AlertCircle, Trash2, User, GitBranch, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,7 +54,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserBasic[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [availableParents, setAvailableParents] = useState<ParentObjective[]>([]);
+  const [availableParents, setAvailableParents] = useState<ParentKeyResult[]>([]);
   const [isLoadingParents, setIsLoadingParents] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [canCreateOKRResult, setCanCreateOKRResult] = useState<CanCreateOKRResult | null>(null);
@@ -65,7 +65,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     period: 'Q1 2026',
     dueDate: '',
     ownerId: '',
-    parentObjectiveId: '' as string,
+    parentKeyResultId: '' as string,
     keyResults: [{ ...emptyKeyResult }] as KeyResultFormData[]
   });
 
@@ -95,7 +95,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       loadAvailableParents(formData.level);
     } else {
       setAvailableParents([]);
-      setFormData(prev => ({ ...prev, parentObjectiveId: '' }));
+      setFormData(prev => ({ ...prev, parentKeyResultId: '' }));
     }
   }, [isOpen, formData.level]);
 
@@ -166,6 +166,9 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     if (numericFields.includes(field)) {
       const numValue = value === '' ? 0 : parseFloat(String(value)) || 0;
       newKRs[index] = { ...newKRs[index], [field]: numValue };
+    } else if (field === 'metricType' && value === 'boolean') {
+      // When switching to boolean, set default values
+      newKRs[index] = { ...newKRs[index], metricType: 'boolean', startValue: 0, targetValue: 1, currentValue: 0, unit: '' };
     } else {
       newKRs[index] = { ...newKRs[index], [field]: value };
     }
@@ -184,7 +187,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       period: 'Q1 2026',
       dueDate: '',
       ownerId: currentUser?.id || '',
-      parentObjectiveId: '',
+      parentKeyResultId: '',
       keyResults: [{ ...emptyKeyResult }]
     });
   };
@@ -210,13 +213,13 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       return;
     }
 
-    // Parent OKR is required for team and individual levels
-    if (formData.level === 'team' && !formData.parentObjectiveId) {
-      setError('Per gli OKR di livello Team è obbligatorio selezionare un OKR Azienda come parent');
+    // Parent KR is required for team and individual levels
+    if (formData.level === 'team' && !formData.parentKeyResultId) {
+      setError('Per gli OKR di livello Team è obbligatorio selezionare un Key Result di un OKR Azienda');
       return;
     }
-    if (formData.level === 'individual' && !formData.parentObjectiveId) {
-      setError('Per gli OKR di livello Individuale è obbligatorio selezionare un OKR Team come parent');
+    if (formData.level === 'individual' && !formData.parentKeyResultId) {
+      setError('Per gli OKR di livello Individuale è obbligatorio selezionare un Key Result di un OKR Team');
       return;
     }
 
@@ -242,7 +245,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
         period: formData.period,
         dueDate: formData.dueDate || undefined,
         ownerId: formData.ownerId || undefined,
-        parentObjectiveId: formData.parentObjectiveId || undefined,
+        parentKeyResultId: formData.parentKeyResultId || undefined,
         keyResults: validKRs.map(kr => ({
           description: kr.description,
           metricType: kr.metricType,
@@ -316,7 +319,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                    <select
                       className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-3 pr-8 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:12px_12px] bg-[position:right_10px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
                       value={formData.level}
-                      onChange={e => setFormData({...formData, level: e.target.value as OKRLevel, parentObjectiveId: ''})}
+                      onChange={e => setFormData({...formData, level: e.target.value as OKRLevel, parentKeyResultId: ''})}
                       disabled={isSubmitting}
                    >
                      {allowedLevels.map(level => (
@@ -345,27 +348,27 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
               {formData.level !== 'company' && (
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    OKR Parent *
+                    Key Result Parent *
                     <span className="font-normal text-slate-500 dark:text-slate-400 ml-1">
-                      ({formData.level === 'team' ? 'Azienda' : 'Team'})
+                      (da OKR {formData.level === 'team' ? 'Azienda' : 'Team'})
                     </span>
                   </label>
                   <div className="relative">
                     <GitBranch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                     <select
                       className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-8 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:12px_12px] bg-[position:right_10px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
-                      value={formData.parentObjectiveId}
-                      onChange={e => setFormData({...formData, parentObjectiveId: e.target.value})}
+                      value={formData.parentKeyResultId}
+                      onChange={e => setFormData({...formData, parentKeyResultId: e.target.value})}
                       disabled={isSubmitting || isLoadingParents}
                       required
                     >
-                      <option value="">Seleziona OKR parent...</option>
+                      <option value="">Seleziona Key Result parent...</option>
                       {isLoadingParents ? (
                         <option disabled>Caricamento...</option>
                       ) : (
                         availableParents.map(parent => (
                           <option key={parent.id} value={parent.id}>
-                            [{LEVEL_LABELS[parent.level]}] {parent.title} ({parent.period})
+                            [{LEVEL_LABELS[parent.objectiveLevel]}] {parent.objectiveTitle} → {parent.description}
                           </option>
                         ))
                       )}
@@ -374,8 +377,8 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                   {availableParents.length === 0 && !isLoadingParents && (
                     <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
                       {formData.level === 'team'
-                        ? 'Devi prima creare un OKR di livello Azienda per poter creare OKR di Team'
-                        : 'Devi prima creare un OKR di livello Team per poter creare OKR Individuali'}
+                        ? 'Devi prima creare un OKR Azienda con almeno un Key Result'
+                        : 'Devi prima creare un OKR Team con almeno un Key Result'}
                     </p>
                   )}
                 </div>
@@ -503,11 +506,11 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Unità</label>
                        <input
                          type="text"
-                         placeholder="es. leads, €"
-                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                         value={kr.unit}
+                         placeholder={kr.metricType === 'boolean' ? '-' : 'es. leads, €'}
+                         className={`w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none ${kr.metricType === 'boolean' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                         value={kr.metricType === 'boolean' ? '' : kr.unit}
                          onChange={e => handleKRChange(idx, 'unit', e.target.value)}
-                         disabled={isSubmitting}
+                         disabled={isSubmitting || kr.metricType === 'boolean'}
                        />
                      </div>
                    </div>
@@ -515,36 +518,60 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                    <div className="grid grid-cols-3 gap-2">
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Iniziale</label>
-                       <input
-                         type="text"
-                         inputMode="decimal"
-                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                         value={kr.startValue}
-                         onChange={e => handleKRChange(idx, 'startValue', e.target.value.replace(/^0+(?=\d)/, ''))}
-                         disabled={isSubmitting}
-                       />
+                       {kr.metricType === 'boolean' ? (
+                         <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 px-2.5 py-1.5 text-xs">
+                           No
+                         </div>
+                       ) : (
+                         <input
+                           type="text"
+                           inputMode="decimal"
+                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                           value={kr.startValue}
+                           onChange={e => handleKRChange(idx, 'startValue', e.target.value.replace(/^0+(?=\d)/, ''))}
+                           disabled={isSubmitting}
+                         />
+                       )}
                      </div>
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Attuale</label>
-                       <input
-                         type="text"
-                         inputMode="decimal"
-                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                         value={kr.currentValue}
-                         onChange={e => handleKRChange(idx, 'currentValue', e.target.value.replace(/^0+(?=\d)/, ''))}
-                         disabled={isSubmitting}
-                       />
+                       {kr.metricType === 'boolean' ? (
+                         <select
+                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                           value={kr.currentValue}
+                           onChange={e => handleKRChange(idx, 'currentValue', e.target.value)}
+                           disabled={isSubmitting}
+                         >
+                           <option value={0}>No</option>
+                           <option value={1}>Sì</option>
+                         </select>
+                       ) : (
+                         <input
+                           type="text"
+                           inputMode="decimal"
+                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                           value={kr.currentValue}
+                           onChange={e => handleKRChange(idx, 'currentValue', e.target.value.replace(/^0+(?=\d)/, ''))}
+                           disabled={isSubmitting}
+                         />
+                       )}
                      </div>
                      <div>
                        <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">Target *</label>
-                       <input
-                         type="text"
-                         inputMode="decimal"
-                         className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
-                         value={kr.targetValue}
-                         onChange={e => handleKRChange(idx, 'targetValue', e.target.value.replace(/^0+(?=\d)/, ''))}
-                         disabled={isSubmitting}
-                       />
+                       {kr.metricType === 'boolean' ? (
+                         <div className="w-full bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-300 px-2.5 py-1.5 text-xs">
+                           Sì
+                         </div>
+                       ) : (
+                         <input
+                           type="text"
+                           inputMode="decimal"
+                           className="w-full bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                           value={kr.targetValue}
+                           onChange={e => handleKRChange(idx, 'targetValue', e.target.value.replace(/^0+(?=\d)/, ''))}
+                           disabled={isSubmitting}
+                         />
+                       )}
                      </div>
                    </div>
                 </div>
