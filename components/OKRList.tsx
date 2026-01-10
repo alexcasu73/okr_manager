@@ -58,6 +58,11 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     archived: 'Archiviati'
   };
 
+  // Only admin can see company tab
+  const visibleTabs = currentUser.role === 'admin'
+    ? ['all', 'company', 'team', 'individual', 'archived'] as const
+    : ['all', 'team', 'individual', 'archived'] as const;
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -86,7 +91,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 pb-1">
-        {(['all', 'company', 'team', 'individual', 'archived'] as const).map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
