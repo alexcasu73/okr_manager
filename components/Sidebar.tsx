@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = (user?.role === 'superadmin' || user?.role === 'azienda') ? [] : [
     { id: 'dashboard', label: 'Dashboard', icon: ICONS.Dashboard },
     { id: 'okrs', label: 'Objectives', icon: ICONS.Target },
-    { id: 'team', label: 'My Team', icon: ICONS.Team },
+    { id: 'team', label: 'My Teams', icon: ICONS.Team },
   ];
 
   const bottomItems = [
