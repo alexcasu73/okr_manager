@@ -24,6 +24,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
   });
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fetchNotificationsRef = useRef<() => void>(() => {});
 
   // Dismiss a single notification
   const dismissNotification = (e: React.MouseEvent, notificationId: string) => {
@@ -128,12 +129,21 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onSelectOKR }) 
     }
   };
 
-  // Fetch OKRs and generate notifications on mount and interval
+  // Update ref so SSE callback can call fetchNotifications
+  fetchNotificationsRef.current = fetchNotifications;
+
+  // Fetch notifications on mount
   useEffect(() => {
     fetchNotifications();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+  }, []);
+
+  // Listen for SSE real-time notifications
+  useEffect(() => {
+    const handleSSE = () => {
+      fetchNotificationsRef.current();
+    };
+    window.addEventListener('sse-notification', handleSSE);
+    return () => window.removeEventListener('sse-notification', handleSSE);
   }, []);
 
   // Listen for OKR updates to refresh notifications

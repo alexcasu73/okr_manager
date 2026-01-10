@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI, setAuthToken, getAuthToken } from '../api/client';
+import { connectSSE, disconnectSSE } from '../services/sseService';
 
 interface User {
   id: string;
@@ -84,6 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     checkAuth();
   }, []);
+
+  // Connect/disconnect SSE based on user state
+  useEffect(() => {
+    if (user) {
+      connectSSE();
+    } else {
+      disconnectSSE();
+    }
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     setError(null);

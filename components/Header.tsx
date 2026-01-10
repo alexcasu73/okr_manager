@@ -1,5 +1,4 @@
 import React from 'react';
-import { ICONS } from '../constants';
 import { useAuth } from '../context/AuthContext';
 import { LogOut } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
@@ -42,9 +41,6 @@ const Header: React.FC<HeaderProps> = ({ onSelectOKR }) => {
     <header className="flex items-center justify-end mb-5 gap-4">
       {/* Right Actions */}
       <div className="flex items-center gap-4">
-        <button className="relative bg-white dark:bg-gray-800 p-2.5 rounded-xl shadow-sm dark:shadow-gray-900/20 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:block">
-          <span className="[&>svg]:w-5 [&>svg]:h-5">{ICONS.Statistics}</span>
-        </button>
         <div className="hidden sm:block">
           <NotificationCenter onSelectOKR={onSelectOKR} />
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, Button, Badge, ProgressBar } from './UIComponents';
 import { User } from '../types';
 import { ICONS, STATUS_COLORS, PROGRESS_COLORS, STATUS_LABELS } from '../constants';
@@ -17,6 +17,7 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchObjectivesRef = useRef<() => void>(() => {});
 
   const fetchObjectives = useCallback(async () => {
     try {
@@ -34,37 +35,21 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     }
   }, [activeTab]);
 
+  // Update ref so SSE callback can call fetchObjectives
+  fetchObjectivesRef.current = fetchObjectives;
+
+  // Listen for SSE real-time notifications
+  useEffect(() => {
+    const handleSSE = () => {
+      fetchObjectivesRef.current();
+    };
+    window.addEventListener('sse-notification', handleSSE);
+    return () => window.removeEventListener('sse-notification', handleSSE);
+  }, []);
+
   useEffect(() => {
     fetchObjectives();
   }, [fetchObjectives, refreshTrigger]);
-
-  // Auto-refresh based on notification interval setting
-  useEffect(() => {
-    const getRefreshInterval = () => {
-      const saved = localStorage.getItem('okr_notification_refresh_interval');
-      return saved ? parseInt(saved, 10) * 60 * 1000 : 5 * 60 * 1000; // Default 5 min
-    };
-
-    let intervalId = setInterval(() => {
-      fetchObjectives();
-    }, getRefreshInterval());
-
-    // Listen for setting changes
-    const handleIntervalChange = (e: CustomEvent) => {
-      clearInterval(intervalId);
-      const newInterval = e.detail * 60 * 1000;
-      intervalId = setInterval(() => {
-        fetchObjectives();
-      }, newInterval);
-    };
-
-    window.addEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
-    };
-  }, [fetchObjectives]);
 
   const filteredObjectives = objectives.filter(obj => {
     // Backend already filters by owner/contributor, just handle archived tab here

@@ -24,13 +24,15 @@ import {
   createGeneralLimiter,
   errorHandler,
   hashPassword,
-  generateJWT
+  generateJWT,
+  verifyJWT
 } from '../backend/src/index.js';
 
 // OKR modules
 import { initializeOKRSchema } from './db/schema.js';
 import { createOKRRoutes } from './okr/okr.routes.js';
 import { createTeamRoutes } from './team/team.routes.js';
+import { createSSERoutes } from './notifications/sse.routes.js';
 import { canCreateUser, canCreateOKR, canCreateKeyResult, getSubscriptionInfo } from './subscription/limits.service.js';
 
 const app = express();
@@ -157,7 +159,9 @@ app.use('/api/okr', createOKRRoutes({
     next();
   },
   checkOKRLimit: canCreateOKR,
-  checkKeyResultLimit: canCreateKeyResult
+  checkKeyResultLimit: canCreateKeyResult,
+  emailService,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
 }));
 
 // Team routes
@@ -168,6 +172,28 @@ app.use('/api/teams', createTeamRoutes({
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   hashPassword,
   generateJWT: (userId) => generateJWT(userId, process.env.JWT_SECRET || 'dev-secret-change-in-production', '7d')
+}));
+
+// SSE routes for real-time notifications
+app.use('/api/notifications', createSSERoutes({
+  authMiddleware,
+  verifyToken: async (token) => {
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+      const decoded = verifyJWT(token, jwtSecret);
+      if (!decoded || !decoded.userId) return null;
+
+      // Get user from database
+      const result = await pool.query(
+        'SELECT id, email, name, role, company_id FROM users WHERE id = $1',
+        [decoded.userId]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('[SSE] Token verification error:', error);
+      return null;
+    }
+  }
 }));
 
 // === ERROR HANDLING ===

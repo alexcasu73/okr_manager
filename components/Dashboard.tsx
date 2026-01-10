@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, ProgressBar, Tooltip as UITooltip } from './UIComponents';
 import { ICONS, STATUS_COLORS, STATUS_LABELS } from '../constants';
 import { okrAPI, Objective, KeyResult, HealthMetrics } from '../api/client';
@@ -18,37 +18,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadObjectivesRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     loadObjectives();
   }, []);
 
-  // Auto-refresh based on notification interval setting
+  // Listen for SSE real-time notifications
   useEffect(() => {
-    const getRefreshInterval = () => {
-      const saved = localStorage.getItem('okr_notification_refresh_interval');
-      return saved ? parseInt(saved, 10) * 60 * 1000 : 5 * 60 * 1000; // Default 5 min
+    const handleSSE = () => {
+      loadObjectivesRef.current();
     };
-
-    let intervalId = setInterval(() => {
-      loadObjectives();
-    }, getRefreshInterval());
-
-    // Listen for setting changes
-    const handleIntervalChange = (e: CustomEvent) => {
-      clearInterval(intervalId);
-      const newInterval = e.detail * 60 * 1000;
-      intervalId = setInterval(() => {
-        loadObjectives();
-      }, newInterval);
-    };
-
-    window.addEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('notificationIntervalChanged', handleIntervalChange as EventListener);
-    };
+    window.addEventListener('sse-notification', handleSSE);
+    return () => window.removeEventListener('sse-notification', handleSSE);
   }, []);
 
   const loadObjectives = async () => {
@@ -62,6 +44,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
       setIsLoading(false);
     }
   };
+
+  // Update ref so SSE callback can call loadObjectives
+  loadObjectivesRef.current = loadObjectives;
 
   // Computed statistics
   const stats = useMemo(() => {

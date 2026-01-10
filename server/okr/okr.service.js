@@ -2,6 +2,8 @@
  * OKR Service - Business logic for Objectives and Key Results
  */
 
+import { sendToUser, sendToCompany, NotificationTypes } from '../notifications/sse.service.js';
+
 // Transform DB row to API format
 function transformObjective(row, keyResults = []) {
   const objective = {
@@ -723,6 +725,22 @@ export async function updateKeyResult(pool, id, data, userId) {
   // Update objective progress
   await updateObjectiveProgress(pool, objectiveId);
 
+  // Send real-time SSE notification to all users in the company
+  const objInfo = await pool.query(
+    `SELECT o.title, u.company_id
+     FROM objectives o
+     JOIN users u ON o.owner_id = u.id
+     WHERE o.id = $1`,
+    [objectiveId]
+  );
+  if (objInfo.rows[0]?.company_id) {
+    sendToCompany(objInfo.rows[0].company_id, NotificationTypes.OKR_UPDATED, {
+      objectiveId,
+      title: objInfo.rows[0].title,
+      timestamp: new Date().toISOString()
+    }, userId); // exclude the user making the change
+  }
+
   return transformKeyResult(rows[0]);
 }
 
@@ -1202,9 +1220,12 @@ export async function submitForReview(pool, objectiveId, userId) {
   try {
     await client.query('BEGIN');
 
-    // Check current approval status
+    // Check current approval status and get objective info
     const { rows } = await client.query(
-      'SELECT approval_status, owner_id FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.owner_id, o.title, u.company_id, u.name as owner_name
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1215,6 +1236,8 @@ export async function submitForReview(pool, objectiveId, userId) {
     if (rows[0].approval_status !== 'draft') {
       throw new Error(`Cannot submit for review: current status is ${rows[0].approval_status}`);
     }
+
+    const { title, company_id, owner_name } = rows[0];
 
     // Update approval status
     await client.query(
@@ -1232,6 +1255,16 @@ export async function submitForReview(pool, objectiveId, userId) {
     );
 
     await client.query('COMMIT');
+
+    // Send real-time SSE notification to all users in the company (admins will see it)
+    if (company_id) {
+      sendToCompany(company_id, NotificationTypes.OKR_SUBMITTED, {
+        objectiveId,
+        title,
+        ownerName: owner_name,
+        timestamp: new Date().toISOString()
+      }, userId); // exclude the submitter
+    }
 
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
@@ -1251,9 +1284,9 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
   try {
     await client.query('BEGIN');
 
-    // Check current approval status
+    // Check current approval status and get owner info
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      'SELECT approval_status, owner_id, title FROM objectives WHERE id = $1',
       [objectiveId]
     );
 
@@ -1264,6 +1297,8 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
     if (rows[0].approval_status !== 'pending_review') {
       throw new Error(`Cannot approve: current status is ${rows[0].approval_status}`);
     }
+
+    const { owner_id, title } = rows[0];
 
     // Update approval status and status
     await client.query(
@@ -1286,6 +1321,14 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
 
     await client.query('COMMIT');
 
+    // Send real-time SSE notification to owner
+    sendToUser(owner_id, NotificationTypes.OKR_APPROVED, {
+      objectiveId,
+      title,
+      comment,
+      timestamp: new Date().toISOString()
+    });
+
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -1299,14 +1342,18 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
  * Reject an objective
  * Changes status from 'pending_review' back to 'draft'
  */
-export async function rejectObjective(pool, objectiveId, rejecterId, comment) {
+export async function rejectObjective(pool, objectiveId, rejecterId, comment, options = {}) {
+  const { emailService, frontendUrl } = options;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Check current approval status
+    // Check current approval status and get owner info
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.title, o.owner_id, u.email as owner_email, u.name as owner_name
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1317,6 +1364,8 @@ export async function rejectObjective(pool, objectiveId, rejecterId, comment) {
     if (rows[0].approval_status !== 'pending_review') {
       throw new Error(`Cannot reject: current status is ${rows[0].approval_status}`);
     }
+
+    const { title, owner_email, owner_name } = rows[0];
 
     // Update approval status back to draft
     await client.query(
@@ -1336,6 +1385,71 @@ export async function rejectObjective(pool, objectiveId, rejecterId, comment) {
 
     await client.query('COMMIT');
 
+    // Send rejection email notification
+    if (emailService && emailService.isConfigured() && owner_email) {
+      try {
+        const okrUrl = `${frontendUrl || 'http://localhost:3000'}`;
+        const subject = `OKR Rifiutato: ${title}`;
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center; }
+              .content { background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; }
+              .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 15px; }
+              .reason-box { background: white; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+              .reason-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+              .reason-text { color: #334155; }
+              .cta { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+              .footer { text-align: center; margin-top: 20px; color: #64748b; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">OKR Rifiutato</h1>
+              </div>
+              <div class="content">
+                <p>Ciao ${owner_name || 'utente'},</p>
+                <p class="title">Il tuo OKR "${title}" è stato rifiutato.</p>
+
+                <div class="reason-box">
+                  <div class="reason-label">Motivazione</div>
+                  <div class="reason-text">${comment}</div>
+                </div>
+
+                <p>Puoi modificare l'OKR e inviarlo nuovamente per l'approvazione.</p>
+
+                <a href="${okrUrl}" class="cta">Vai a OKR Manager</a>
+
+                <div class="footer">
+                  <p>Questa email è stata inviata automaticamente da OKR Manager.</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+        await emailService.sendEmail(owner_email, subject, html);
+        console.log(`Rejection email sent to ${owner_email} for objective "${title}"`);
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Don't fail the rejection if email fails
+      }
+    }
+
+    // Send real-time SSE notification to owner
+    sendToUser(rows[0].owner_id, NotificationTypes.OKR_REJECTED, {
+      objectiveId,
+      title,
+      comment,
+      timestamp: new Date().toISOString()
+    });
+
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -1354,9 +1468,12 @@ export async function activateObjective(pool, objectiveId, userId) {
   try {
     await client.query('BEGIN');
 
-    // Check current approval status
+    // Check current approval status and get owner info
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.owner_id, o.title, u.company_id
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1367,6 +1484,8 @@ export async function activateObjective(pool, objectiveId, userId) {
     if (rows[0].approval_status !== 'approved') {
       throw new Error(`Cannot activate: current status is ${rows[0].approval_status}`);
     }
+
+    const { owner_id, title, company_id } = rows[0];
 
     // Update approval status and status to on-track
     await client.query(
@@ -1386,6 +1505,21 @@ export async function activateObjective(pool, objectiveId, userId) {
     );
 
     await client.query('COMMIT');
+
+    // Send real-time SSE notification to owner and company
+    sendToUser(owner_id, NotificationTypes.OKR_ACTIVATED, {
+      objectiveId,
+      title,
+      timestamp: new Date().toISOString()
+    });
+
+    if (company_id) {
+      sendToCompany(company_id, NotificationTypes.OKR_UPDATED, {
+        objectiveId,
+        title,
+        timestamp: new Date().toISOString()
+      }, userId);
+    }
 
     return getObjectiveById(pool, objectiveId);
   } catch (error) {

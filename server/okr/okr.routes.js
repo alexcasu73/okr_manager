@@ -44,7 +44,7 @@ import {
 
 export function createOKRRoutes(config) {
   const router = Router();
-  const { pool, authMiddleware, requireAdmin, checkOKRLimit, checkKeyResultLimit } = config;
+  const { pool, authMiddleware, requireAdmin, checkOKRLimit, checkKeyResultLimit, emailService, frontendUrl } = config;
 
   // All routes require authentication
   router.use(authMiddleware);
@@ -505,7 +505,7 @@ export function createOKRRoutes(config) {
         return res.status(400).json({ error: 'Comment is required when rejecting' });
       }
 
-      const objective = await rejectObjective(pool, req.params.id, req.user.id, comment);
+      const objective = await rejectObjective(pool, req.params.id, req.user.id, comment, { emailService, frontendUrl });
       res.json(objective);
     } catch (error) {
       if (error.message.includes('Cannot reject')) {
