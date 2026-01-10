@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './UIComponents';
 import { ICONS } from '../constants';
-import { okrAPI, CreateObjectiveData, UserBasic, ParentKeyResult, OKRLevel, subscriptionAPI, SubscriptionInfo, CanCreateOKRResult } from '../api/client';
-import { Loader2, AlertCircle, Trash2, User, GitBranch, Crown } from 'lucide-react';
+import { okrAPI, CreateObjectiveData, UserBasic, ParentKeyResult, OKRLevel, subscriptionAPI, SubscriptionInfo, CanCreateOKRResult, teamAPI, Team } from '../api/client';
+import { Loader2, AlertCircle, Trash2, User, GitBranch, Crown, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface CreateOKRModalProps {
@@ -54,6 +54,8 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserBasic[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [availableParents, setAvailableParents] = useState<ParentKeyResult[]>([]);
   const [isLoadingParents, setIsLoadingParents] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
@@ -65,14 +67,16 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     period: 'Q1 2026',
     dueDate: '',
     ownerId: '',
+    teamId: '' as string,
     parentKeyResultId: '' as string,
     keyResults: [{ ...emptyKeyResult }] as KeyResultFormData[]
   });
 
-  // Load users and subscription info when modal opens
+  // Load users, teams, and subscription info when modal opens
   useEffect(() => {
     if (isOpen) {
       loadUsers();
+      loadTeams();
       // Load subscription info for KR limits
       subscriptionAPI.getInfo()
         .then(info => setSubscriptionInfo(info))
@@ -112,6 +116,22 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       console.error('Failed to load users:', err);
     } finally {
       setIsLoadingUsers(false);
+    }
+  };
+
+  const loadTeams = async () => {
+    setIsLoadingTeams(true);
+    try {
+      const teamList = await teamAPI.getTeams();
+      setTeams(teamList);
+      // If only one team, auto-select it
+      if (teamList.length === 1) {
+        setFormData(prev => ({ ...prev, teamId: teamList[0].id }));
+      }
+    } catch (err) {
+      console.error('Failed to load teams:', err);
+    } finally {
+      setIsLoadingTeams(false);
     }
   };
 
@@ -187,6 +207,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
       period: 'Q1 2026',
       dueDate: '',
       ownerId: currentUser?.id || '',
+      teamId: teams.length === 1 ? teams[0].id : '',
       parentKeyResultId: '',
       keyResults: [{ ...emptyKeyResult }]
     });
@@ -210,6 +231,12 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
     // Validation
     if (!formData.title.trim()) {
       setError('Il titolo dell\'obiettivo è obbligatorio');
+      return;
+    }
+
+    // Team is required for team and individual levels
+    if ((formData.level === 'team' || formData.level === 'individual') && !formData.teamId) {
+      setError('Seleziona un team per questo OKR');
       return;
     }
 
@@ -245,6 +272,7 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
         period: formData.period,
         dueDate: formData.dueDate || undefined,
         ownerId: formData.ownerId || undefined,
+        teamId: formData.teamId || undefined,
         parentKeyResultId: formData.parentKeyResultId || undefined,
         keyResults: validKRs.map(kr => ({
           description: kr.description,
@@ -379,6 +407,41 @@ const CreateOKRModal: React.FC<CreateOKRModalProps> = ({ isOpen, onClose, onSave
                       {formData.level === 'team'
                         ? 'Devi prima creare un OKR Azienda con almeno un Key Result'
                         : 'Devi prima creare un OKR Team con almeno un Key Result'}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Team Selector - required for team and individual levels */}
+              {(formData.level === 'team' || formData.level === 'individual') && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Team *
+                  </label>
+                  <div className="relative">
+                    <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                    <select
+                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-8 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-no-repeat bg-[length:12px_12px] bg-[position:right_10px_center] bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')]"
+                      value={formData.teamId}
+                      onChange={e => setFormData({...formData, teamId: e.target.value})}
+                      disabled={isSubmitting || isLoadingTeams}
+                      required
+                    >
+                      <option value="">Seleziona team...</option>
+                      {isLoadingTeams ? (
+                        <option disabled>Caricamento...</option>
+                      ) : (
+                        teams.map(team => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  {teams.length === 0 && !isLoadingTeams && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                      Devi far parte di almeno un team per creare OKR
                     </p>
                   )}
                 </div>
