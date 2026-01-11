@@ -9,6 +9,15 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }) => {
+  const [showCookieConsent, setShowCookieConsent] = React.useState(() => {
+    return !localStorage.getItem('cookieConsent');
+  });
+
+  const acceptCookies = () => {
+    localStorage.setItem('cookieConsent', 'accepted');
+    setShowCookieConsent(false);
+  };
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -232,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       {/* Footer */}
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-3">
               <div className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 p-2 rounded-xl">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -243,7 +252,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               </div>
               <span className="text-lg font-bold text-slate-900 dark:text-white">OKRfy</span>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center justify-center gap-6">
               <button
                 onClick={onNavigateToPrivacy}
                 className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm transition-colors"
@@ -263,6 +272,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
           </div>
         </div>
       </footer>
+
+      {/* Cookie Consent Banner */}
+      {showCookieConsent && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left">
+                Utilizziamo cookie tecnici necessari al funzionamento del servizio. Continuando a navigare, accetti l'uso dei cookie.{' '}
+                <button
+                  onClick={onNavigateToPrivacy}
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Leggi la Privacy Policy
+                </button>
+              </p>
+              <button
+                onClick={acceptCookies}
+                className="px-6 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors whitespace-nowrap"
+              >
+                Accetta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
