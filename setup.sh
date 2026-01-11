@@ -7,7 +7,7 @@ set -e
 
 DOMAIN="okrfy.it"
 EMAIL="admin@okrfy.it"
-APP_DIR="/opt/okrfy"
+APP_DIR="${APP_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 APP_NAME="OKRfy"
 
 # Colors
@@ -231,16 +231,27 @@ do_logs() {
 
 # Update application
 do_update() {
-    log_info "Updating $APP_NAME..."
+    log_title "Updating $APP_NAME"
     cd $APP_DIR
 
+    log_info "Pulling latest changes..."
     git pull
+
+    log_info "Updating submodules..."
     git submodule update --init --recursive
 
+    log_info "Building containers..."
     docker compose build
+
+    log_info "Restarting services..."
     docker compose up -d
 
-    log_info "$APP_NAME updated"
+    log_info "Cleaning old images..."
+    docker image prune -f
+
+    echo ""
+    log_info "$APP_NAME updated successfully!"
+    docker compose ps
 }
 
 # Reset database
