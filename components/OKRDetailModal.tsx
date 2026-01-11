@@ -747,32 +747,38 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
   // statusLabels ora usa i valori di approvalStatus per uniformità
   const statusLabels: Record<string, string> = {
     draft: 'Bozza',
-    pending_review: 'In revisione',
+    pending_review: 'In Revisione',
     approved: 'Approvato',
     active: 'Attivo',
-    paused: 'In pausa',
+    paused: 'In Pausa',
     stopped: 'Fermato',
-    archived: 'Archiviato'
+    archived: 'Archiviato',
+    closed: 'Chiuso',
+    failed: 'Fallito'
   };
 
   const approvalStatusLabels: Record<string, string> = {
     draft: 'Bozza',
-    pending_review: 'In revisione',
+    pending_review: 'In Revisione',
     approved: 'Approvato',
     active: 'Attivo',
-    paused: 'In pausa',
+    paused: 'In Pausa',
     stopped: 'Fermato',
-    archived: 'Archiviato'
+    archived: 'Archiviato',
+    closed: 'Chiuso',
+    failed: 'Fallito'
   };
 
   const approvalStatusColors: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
     pending_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    approved: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     paused: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     stopped: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    archived: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    archived: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    closed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    failed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   };
 
   const approvalActionLabels: Record<string, string> = {
@@ -1199,8 +1205,8 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                         </>
                       )}
 
-                      {/* Owner/Admin/Contributor can archive if stopped */}
-                      {hasPermission && objective.approvalStatus === 'stopped' && (
+                      {/* Owner/Admin/Contributor can archive if stopped, closed or failed */}
+                      {hasPermission && ['stopped', 'closed', 'failed'].includes(objective.approvalStatus || '') && (
                         <Button
                           size="sm"
                           variant="secondary"
@@ -1949,7 +1955,7 @@ const OKRDetailModal: React.FC<OKRDetailModalProps> = ({
                       <Users className="w-5 h-5" />
                       Contributori ({contributors.length})
                     </h4>
-                    {(isOwner || isAdmin) && (
+                    {(isOwner || isAdmin) && isDraft && (
                       <Button
                         variant="secondary"
                         size="sm"

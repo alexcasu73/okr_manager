@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">OKR Manager</h1>
+              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">OKRfy</h1>
             </div>
             {/* Close button for mobile */}
             {onClose && (

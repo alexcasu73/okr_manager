@@ -89,10 +89,17 @@ const RegisterAziendaPage: React.FC<RegisterAziendaPageProps> = ({ onNavigateToL
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl shadow-lg mb-4">
-            <Target className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">OKR Manager</h1>
+          <button
+            onClick={onNavigateToLogin}
+            className="inline-flex items-center justify-center w-16 h-16 bg-slate-900 dark:bg-slate-100 rounded-2xl shadow-lg mb-4 hover:scale-105 transition-transform"
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white dark:text-slate-900">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">OKRfy</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Registra la tua azienda</p>
         </div>
 

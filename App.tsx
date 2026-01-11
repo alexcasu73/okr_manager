@@ -15,6 +15,7 @@ import BillingPage from './components/BillingPage';
 import CreateOKRModal from './components/CreateOKRModal';
 import OKRDetailModal from './components/OKRDetailModal';
 import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
 import InvitePage from './components/InvitePage';
 import RegisterAziendaPage from './components/RegisterAziendaPage';
 import VerifyEmailPage from './components/VerifyEmailPage';
@@ -56,6 +57,9 @@ const AppContent: React.FC = () => {
 
   // Check for register route
   const isRegisterPage = path === '/register';
+
+  // Check for login route
+  const isLoginPage = path === '/login';
 
   // Check for verify-email route
   const verifyEmailMatch = path.match(/^\/verify-email/);
@@ -147,9 +151,24 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Not authenticated - show login
+  // Not authenticated - show landing or login page
   if (!isAuthenticated || !user) {
-    return <LoginPage onNavigateToRegister={() => navigate('/register')} />;
+    // Show login page on /login route
+    if (isLoginPage) {
+      return (
+        <LoginPage
+          onNavigateToRegister={() => navigate('/register')}
+          onNavigateToLanding={() => navigate('/')}
+        />
+      );
+    }
+    // Show landing page by default
+    return (
+      <LandingPage
+        onNavigateToLogin={() => navigate('/login')}
+        onNavigateToRegister={() => navigate('/register')}
+      />
+    );
   }
 
   // Convert auth user to the format expected by components

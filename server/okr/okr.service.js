@@ -1462,15 +1462,16 @@ export async function rejectObjective(pool, objectiveId, rejecterId, comment, op
 /**
  * Activate an approved objective
  * Changes status from 'approved' to 'active'
+ * Note: Child OKRs cannot be activated until their parent is active
  */
 export async function activateObjective(pool, objectiveId, userId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Check current approval status and get owner info
+    // Check current approval status, parent info, and get owner info
     const { rows } = await client.query(
-      `SELECT o.approval_status, o.owner_id, o.title, u.company_id
+      `SELECT o.approval_status, o.owner_id, o.title, o.parent_objective_id, u.company_id
        FROM objectives o
        JOIN users u ON o.owner_id = u.id
        WHERE o.id = $1`,
@@ -1483,6 +1484,18 @@ export async function activateObjective(pool, objectiveId, userId) {
 
     if (rows[0].approval_status !== 'approved') {
       throw new Error(`Cannot activate: current status is ${rows[0].approval_status}`);
+    }
+
+    // Check if parent objective is active (child cannot start before parent)
+    if (rows[0].parent_objective_id) {
+      const { rows: parentRows } = await client.query(
+        `SELECT approval_status, title FROM objectives WHERE id = $1`,
+        [rows[0].parent_objective_id]
+      );
+
+      if (parentRows.length > 0 && parentRows[0].approval_status !== 'active') {
+        throw new Error(`Non è possibile attivare questo OKR: l'OKR padre "${parentRows[0].title}" non è ancora attivo (stato: ${parentRows[0].approval_status})`);
+      }
     }
 
     const { owner_id, title, company_id } = rows[0];
@@ -1533,6 +1546,7 @@ export async function activateObjective(pool, objectiveId, userId) {
 /**
  * Pause an active objective
  * Can be resumed later
+ * Also pauses all active child objectives
  */
 export async function pauseObjective(pool, objectiveId, userId, comment = null) {
   const client = await pool.connect();
@@ -1540,7 +1554,10 @@ export async function pauseObjective(pool, objectiveId, userId, comment = null) 
     await client.query('BEGIN');
 
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.title, o.owner_id, u.company_id
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1552,6 +1569,10 @@ export async function pauseObjective(pool, objectiveId, userId, comment = null) 
       throw new Error(`Non è possibile mettere in pausa: stato attuale è ${rows[0].approval_status}`);
     }
 
+    const parentTitle = rows[0].title;
+    const companyId = rows[0].company_id;
+
+    // Pause the parent objective
     await client.query(
       `UPDATE objectives
        SET approval_status = 'paused',
@@ -1566,7 +1587,49 @@ export async function pauseObjective(pool, objectiveId, userId, comment = null) 
       [objectiveId, userId, comment || 'Messo in pausa']
     );
 
+    // Find and pause all active child objectives (recursively)
+    const { rows: activeChildren } = await client.query(
+      `WITH RECURSIVE child_okrs AS (
+         SELECT id, title FROM objectives WHERE parent_objective_id = $1 AND approval_status = 'active'
+         UNION ALL
+         SELECT o.id, o.title FROM objectives o
+         INNER JOIN child_okrs c ON o.parent_objective_id = c.id
+         WHERE o.approval_status = 'active'
+       )
+       SELECT id, title FROM child_okrs`,
+      [objectiveId]
+    );
+
+    // Pause each active child
+    for (const child of activeChildren) {
+      await client.query(
+        `UPDATE objectives
+         SET approval_status = 'paused',
+             updated_at = NOW()
+         WHERE id = $1`,
+        [child.id]
+      );
+
+      await client.query(
+        `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+         VALUES ($1, 'paused', $2, $3)`,
+        [child.id, userId, `Messo in pausa automaticamente: OKR padre "${parentTitle}" in pausa`]
+      );
+    }
+
     await client.query('COMMIT');
+
+    // Send SSE notification to all users in the company
+    if (companyId) {
+      sendToCompany(companyId, NotificationTypes.OKR_UPDATED, {
+        objectiveId,
+        title: parentTitle,
+        action: 'paused',
+        childrenPaused: activeChildren.length,
+        timestamp: new Date().toISOString()
+      }, userId);
+    }
+
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -1585,7 +1648,10 @@ export async function resumeObjective(pool, objectiveId, userId, comment = null)
     await client.query('BEGIN');
 
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.title, u.company_id
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1596,6 +1662,8 @@ export async function resumeObjective(pool, objectiveId, userId, comment = null)
     if (rows[0].approval_status !== 'paused') {
       throw new Error(`Non è possibile riprendere: stato attuale è ${rows[0].approval_status}`);
     }
+
+    const { title, company_id } = rows[0];
 
     await client.query(
       `UPDATE objectives
@@ -1612,6 +1680,17 @@ export async function resumeObjective(pool, objectiveId, userId, comment = null)
     );
 
     await client.query('COMMIT');
+
+    // Send SSE notification to all users in the company
+    if (company_id) {
+      sendToCompany(company_id, NotificationTypes.OKR_UPDATED, {
+        objectiveId,
+        title,
+        action: 'resumed',
+        timestamp: new Date().toISOString()
+      }, userId);
+    }
+
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -1624,6 +1703,7 @@ export async function resumeObjective(pool, objectiveId, userId, comment = null)
 /**
  * Stop an objective permanently
  * Cannot be resumed, but can be archived
+ * Also stops all active/paused child objectives
  */
 export async function stopObjective(pool, objectiveId, userId, comment = null) {
   const client = await pool.connect();
@@ -1631,7 +1711,10 @@ export async function stopObjective(pool, objectiveId, userId, comment = null) {
     await client.query('BEGIN');
 
     const { rows } = await client.query(
-      'SELECT approval_status FROM objectives WHERE id = $1',
+      `SELECT o.approval_status, o.title, u.company_id
+       FROM objectives o
+       JOIN users u ON o.owner_id = u.id
+       WHERE o.id = $1`,
       [objectiveId]
     );
 
@@ -1643,6 +1726,8 @@ export async function stopObjective(pool, objectiveId, userId, comment = null) {
     if (!['active', 'paused'].includes(currentStatus)) {
       throw new Error(`Non è possibile fermare: stato attuale è ${currentStatus}`);
     }
+
+    const { title, company_id } = rows[0];
 
     await client.query(
       `UPDATE objectives
@@ -1658,7 +1743,49 @@ export async function stopObjective(pool, objectiveId, userId, comment = null) {
       [objectiveId, userId, comment || 'Fermato definitivamente']
     );
 
+    // Find and stop all active/paused child objectives (recursively)
+    const { rows: activeChildren } = await client.query(
+      `WITH RECURSIVE child_okrs AS (
+         SELECT id, title FROM objectives WHERE parent_objective_id = $1 AND approval_status IN ('active', 'paused')
+         UNION ALL
+         SELECT o.id, o.title FROM objectives o
+         INNER JOIN child_okrs c ON o.parent_objective_id = c.id
+         WHERE o.approval_status IN ('active', 'paused')
+       )
+       SELECT id, title FROM child_okrs`,
+      [objectiveId]
+    );
+
+    // Stop each active/paused child
+    for (const child of activeChildren) {
+      await client.query(
+        `UPDATE objectives
+         SET approval_status = 'stopped',
+             updated_at = NOW()
+         WHERE id = $1`,
+        [child.id]
+      );
+
+      await client.query(
+        `INSERT INTO approval_history (objective_id, action, performed_by, comment)
+         VALUES ($1, 'stopped', $2, $3)`,
+        [child.id, userId, `Fermato automaticamente: OKR padre "${title}" fermato`]
+      );
+    }
+
     await client.query('COMMIT');
+
+    // Send SSE notification to all users in the company
+    if (company_id) {
+      sendToCompany(company_id, NotificationTypes.OKR_UPDATED, {
+        objectiveId,
+        title,
+        action: 'stopped',
+        childrenStopped: activeChildren.length,
+        timestamp: new Date().toISOString()
+      }, userId);
+    }
+
     return getObjectiveById(pool, objectiveId);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -1731,8 +1858,9 @@ export async function archiveObjective(pool, objectiveId, userId, comment = null
       throw new Error('Objective not found');
     }
 
-    if (rows[0].approval_status !== 'stopped') {
-      throw new Error(`Non è possibile archiviare: l'OKR deve essere prima fermato (stato attuale: ${rows[0].approval_status})`);
+    const archivableStates = ['stopped', 'closed', 'failed'];
+    if (!archivableStates.includes(rows[0].approval_status)) {
+      throw new Error(`Non è possibile archiviare: l'OKR deve essere Fermato, Chiuso o Fallito (stato attuale: ${rows[0].approval_status})`);
     }
 
     await client.query(
@@ -1940,14 +2068,20 @@ export async function addContributor(pool, objectiveId, userId, role = 'contribu
     throw new Error('User is already a contributor to this objective');
   }
 
-  // Check if user is the owner
+  // Check if user is the owner and get approval status
   const objective = await pool.query(
-    'SELECT owner_id FROM objectives WHERE id = $1',
+    'SELECT owner_id, approval_status FROM objectives WHERE id = $1',
     [objectiveId]
   );
 
   if (objective.rows.length === 0) {
     throw new Error('Objective not found');
+  }
+
+  // Block adding contributors if OKR is not in draft state
+  const lockedStates = ['active', 'paused', 'stopped', 'archived', 'closed', 'failed'];
+  if (lockedStates.includes(objective.rows[0].approval_status)) {
+    throw new Error('Non è possibile aggiungere collaboratori a un OKR che non è in bozza');
   }
 
   if (objective.rows[0].owner_id === userId) {

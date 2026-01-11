@@ -531,7 +531,7 @@ export function createOKRRoutes(config) {
       const objective = await activateObjective(pool, req.params.id, req.user.id);
       res.json(objective);
     } catch (error) {
-      if (error.message.includes('Cannot activate')) {
+      if (error.message.includes('Cannot activate') || error.message.includes('Non è possibile')) {
         return res.status(400).json({ error: error.message });
       }
       next(error);
@@ -739,7 +739,7 @@ export function createOKRRoutes(config) {
       const contributor = await addContributor(pool, req.params.id, userId, role);
       res.status(201).json(contributor);
     } catch (error) {
-      if (error.message.includes('already a contributor') || error.message.includes('cannot be added')) {
+      if (error.message.includes('already a contributor') || error.message.includes('cannot be added') || error.message.includes('Non è possibile')) {
         return res.status(400).json({ error: error.message });
       }
       next(error);

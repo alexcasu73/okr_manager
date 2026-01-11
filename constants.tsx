@@ -79,10 +79,10 @@ export const PROGRESS_COLORS: Record<string, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   'draft': 'Bozza',
-  'pending_review': 'In revisione',
+  'pending_review': 'In Revisione',
   'approved': 'Approvato',
   'active': 'Attivo',
-  'paused': 'In pausa',
+  'paused': 'In Pausa',
   'stopped': 'Fermato',
   'archived': 'Archiviato',
   'closed': 'Chiuso',

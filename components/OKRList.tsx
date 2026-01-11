@@ -23,7 +23,6 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
     try {
       setIsLoading(true);
       setError(null);
-      setObjectives([]); // Clear old data to avoid flash of wrong content
       // 'archived' tab fetches all and filters client-side, level tabs filter by level
       const filters = (activeTab !== 'all' && activeTab !== 'archived') ? { level: activeTab } : {};
       const data = await okrAPI.getObjectives(filters);
@@ -37,6 +36,12 @@ const OKRList: React.FC<OKRListProps> = ({ onCreateClick, onSelectOKR, currentUs
 
   // Update ref so SSE callback can call fetchObjectives
   fetchObjectivesRef.current = fetchObjectives;
+
+  // Clear objectives immediately when tab changes to avoid flash of wrong content
+  useEffect(() => {
+    setObjectives([]);
+    setIsLoading(true);
+  }, [activeTab]);
 
   // Listen for SSE real-time notifications
   useEffect(() => {
