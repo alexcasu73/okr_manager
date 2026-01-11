@@ -1,0 +1,32 @@
+FROM node:20-alpine
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY server/package*.json ./server/
+COPY backend/package*.json ./backend/
+
+# Install root dependencies (for shared config)
+RUN npm ci --omit=dev --ignore-scripts || true
+
+# Install server dependencies
+WORKDIR /app/server
+RUN npm ci --omit=dev
+
+# Install backend dependencies
+WORKDIR /app/backend
+RUN npm ci --omit=dev
+
+# Go back to app root
+WORKDIR /app
+
+# Copy source code
+COPY server/ ./server/
+COPY backend/src/ ./backend/src/
+
+EXPOSE 3002
+
+CMD ["node", "server/index.js"]

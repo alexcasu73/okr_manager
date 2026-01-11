@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+server/node_modules
+backend/node_modules
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Deploy
+deploy.sh
+setup.sh
+nginx/
+certbot/
+
+# Claude
+.claude/
