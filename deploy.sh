@@ -241,6 +241,52 @@ ssl() {
     get_ssl
 }
 
+# Enable autostart on boot
+autostart() {
+    check_root
+    log_info "Configuring autostart..."
+
+    # Ensure Docker starts on boot
+    systemctl enable docker
+
+    # Create systemd service
+    cat > /etc/systemd/system/okrfy.service << EOF
+[Unit]
+Description=OKRfy Application
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Enable and start service
+    systemctl daemon-reload
+    systemctl enable okrfy.service
+
+    log_info "Autostart configured. OKRfy will start automatically on boot."
+}
+
+# Disable autostart
+autostart_disable() {
+    check_root
+    log_info "Disabling autostart..."
+
+    systemctl disable okrfy.service 2>/dev/null || true
+    rm -f /etc/systemd/system/okrfy.service
+    systemctl daemon-reload
+
+    log_info "Autostart disabled."
+}
+
 # Print usage
 usage() {
     echo "OKRfy Deploy Script"
@@ -256,6 +302,8 @@ usage() {
     echo "  update    - Update and rebuild"
     echo "  status    - Show container status"
     echo "  logs      - Show logs (optional: service name)"
+    echo "  autostart - Enable autostart on boot"
+    echo "  no-autostart - Disable autostart on boot"
     echo ""
 }
 
@@ -284,6 +332,12 @@ case "${1:-}" in
         ;;
     logs)
         logs "$@"
+        ;;
+    autostart)
+        autostart
+        ;;
+    no-autostart)
+        autostart_disable
         ;;
     *)
         usage
