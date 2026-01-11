@@ -4,9 +4,11 @@ import { Target, CheckCircle2, Users, TrendingUp, BarChart3, Shield, Zap, ArrowR
 interface LandingPageProps {
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToTerms?: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigateToRegister }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }) => {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -240,6 +242,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 </svg>
               </div>
               <span className="text-lg font-bold text-slate-900 dark:text-white">OKRfy</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={onNavigateToPrivacy}
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm transition-colors"
+              >
+                Privacy Policy
+              </button>
+              <button
+                onClick={onNavigateToTerms}
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm transition-colors"
+              >
+                Termini di Utilizzo
+              </button>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-sm">
               © {new Date().getFullYear()} OKRfy. Tutti i diritti riservati.

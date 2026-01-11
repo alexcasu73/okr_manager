@@ -20,6 +20,8 @@ import InvitePage from './components/InvitePage';
 import RegisterAziendaPage from './components/RegisterAziendaPage';
 import VerifyEmailPage from './components/VerifyEmailPage';
 import SetupAccountPage from './components/SetupAccountPage';
+import PrivacyPage from './components/PrivacyPage';
+import TermsPage from './components/TermsPage';
 import { ViewMode } from './types';
 import { Loader2, Menu } from 'lucide-react';
 
@@ -71,6 +73,10 @@ const AppContent: React.FC = () => {
 
   // Check for billing route (redirect from Stripe)
   const isBillingPage = path === '/billing';
+
+  // Check for privacy and terms pages
+  const isPrivacyPage = path === '/privacy';
+  const isTermsPage = path === '/terms';
 
   // Set default view based on user role or URL
   useEffect(() => {
@@ -151,6 +157,24 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Handle privacy page (can be accessed without auth)
+  if (isPrivacyPage) {
+    return (
+      <PrivacyPage
+        onBack={() => navigate('/')}
+      />
+    );
+  }
+
+  // Handle terms page (can be accessed without auth)
+  if (isTermsPage) {
+    return (
+      <TermsPage
+        onBack={() => navigate('/')}
+      />
+    );
+  }
+
   // Not authenticated - show landing or login page
   if (!isAuthenticated || !user) {
     // Show login page on /login route
@@ -167,6 +191,8 @@ const AppContent: React.FC = () => {
       <LandingPage
         onNavigateToLogin={() => navigate('/login')}
         onNavigateToRegister={() => navigate('/register')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToTerms={() => navigate('/terms')}
       />
     );
   }
