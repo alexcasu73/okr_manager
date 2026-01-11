@@ -37,12 +37,12 @@ check_root() {
 
 # Install Docker
 install_docker() {
-    log_info "Installing Docker..."
-
     if command -v docker &> /dev/null; then
         log_info "Docker already installed"
         return
     fi
+
+    log_info "Installing Docker..."
 
     apt-get update
     apt-get install -y ca-certificates curl gnupg
