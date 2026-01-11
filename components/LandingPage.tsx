@@ -241,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
       {/* Footer */}
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative">
             <div className="flex items-center gap-3">
               <div className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 p-2 rounded-xl">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -252,7 +252,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
               </div>
               <span className="text-lg font-bold text-slate-900 dark:text-white">OKRfy</span>
             </div>
-            <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center gap-6 md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
               <button
                 onClick={onNavigateToPrivacy}
                 className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm transition-colors"
