@@ -78,6 +78,13 @@ const AppContent: React.FC = () => {
   const isPrivacyPage = path === '/privacy';
   const isTermsPage = path === '/terms';
 
+  // Redirect to home if authenticated and on login page
+  useEffect(() => {
+    if (isAuthenticated && user && isLoginPage) {
+      navigate('/');
+    }
+  }, [isAuthenticated, user, isLoginPage]);
+
   // Set default view based on user role or URL
   useEffect(() => {
     // Handle /billing URL redirect from Stripe
