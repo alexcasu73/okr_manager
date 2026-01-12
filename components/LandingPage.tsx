@@ -44,7 +44,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                   <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="text-xl font-bold text-slate-900 dark:text-white">OKRfy</span>
+              <div className="flex flex-col items-start">
+                <span className="text-xl font-bold text-slate-900 dark:text-white">OKRfy</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-start leading-tight">
+                  <span>Powered by</span>
+                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+                </span>
+              </div>
             </button>
 
             {/* Navigation */}
@@ -244,13 +250,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative">
             <div className="flex items-center gap-3">
               <div className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 p-2 rounded-xl">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="text-lg font-bold text-slate-900 dark:text-white">OKRfy</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-slate-900 dark:text-white">OKRfy</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-start leading-tight">
+                  <span>Powered by</span>
+                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-6 md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
               <button
