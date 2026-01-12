@@ -48,7 +48,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 <span className="text-xl font-bold text-slate-900 dark:text-white">OKRfy</span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-start leading-tight">
                   <span>Powered by</span>
-                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px dark:invert" /> Ncode Studio</span>
                 </span>
               </div>
             </button>
@@ -260,7 +260,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToLogin, onNavigate
                 <span className="text-xl font-bold text-slate-900 dark:text-white">OKRfy</span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-start leading-tight">
                   <span>Powered by</span>
-                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px dark:invert" /> Ncode Studio</span>
                 </span>
               </div>
             </div>

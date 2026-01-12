@@ -102,7 +102,7 @@ const RegisterAziendaPage: React.FC<RegisterAziendaPageProps> = ({ onNavigateToL
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">OKRfy</h1>
           <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-center leading-tight">
             <span>Powered by</span>
-            <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+            <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px dark:invert" /> Ncode Studio</span>
           </span>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Registra la tua azienda</p>
         </div>
