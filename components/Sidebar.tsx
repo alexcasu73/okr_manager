@@ -128,7 +128,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">OKRfy</h1>
+              <div className="flex flex-col items-start">
+                <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">OKRfy</h1>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-start leading-tight">
+                  <span>Powered by</span>
+                  <span className="flex items-center gap-1"><img src="/ncode-icon.png" alt="Ncode Studio" className="h-2 w-2 -mt-px" /> Ncode Studio</span>
+                </span>
+              </div>
             </div>
             {/* Close button for mobile */}
             {onClose && (
