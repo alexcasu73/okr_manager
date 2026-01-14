@@ -7,9 +7,9 @@ interface PrivacyPageProps {
 
 const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 overflow-y-auto">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <button
             onClick={onBack}
@@ -22,12 +22,13 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
-          Privacy Policy
-        </h1>
+      <main>
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+            Privacy Policy
+          </h1>
 
-        <div className="prose prose-slate dark:prose-invert max-w-none">
+          <div className="prose prose-slate dark:prose-invert max-w-none">
           <p className="text-slate-600 dark:text-slate-400 mb-6">
             Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}
           </p>
@@ -39,7 +40,7 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
             <p className="text-slate-600 dark:text-slate-400">
               Il Titolare del trattamento dei dati personali è NCode Studio, con sede in Italia.
               Per qualsiasi informazione relativa al trattamento dei dati personali, è possibile
-              contattarci all'indirizzo email: privacy@okrfy.it
+              contattarci all'indirizzo email: team@ncodestudio.it
             </p>
           </section>
 
@@ -153,9 +154,10 @@ const PrivacyPage: React.FC<PrivacyPageProps> = ({ onBack }) => {
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
               Per esercitare i propri diritti o per qualsiasi domanda relativa alla privacy,
-              è possibile contattarci all'indirizzo: privacy@okrfy.it
+              è possibile contattarci all'indirizzo: team@ncodestudio.it
             </p>
           </section>
+          </div>
         </div>
       </main>
 

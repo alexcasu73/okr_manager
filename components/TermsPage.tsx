@@ -7,9 +7,9 @@ interface TermsPageProps {
 
 const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 overflow-y-auto">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <button
             onClick={onBack}
@@ -22,12 +22,13 @@ const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
-          Termini di Utilizzo
-        </h1>
+      <main>
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+            Termini di Utilizzo
+          </h1>
 
-        <div className="prose prose-slate dark:prose-invert max-w-none">
+          <div className="prose prose-slate dark:prose-invert max-w-none">
           <p className="text-slate-600 dark:text-slate-400 mb-6">
             Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}
           </p>
@@ -175,9 +176,10 @@ const TermsPage: React.FC<TermsPageProps> = ({ onBack }) => {
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
               Per domande relative ai presenti Termini di Utilizzo, contattare:
-              legal@okrfy.it
+              team@ncodestudio.it
             </p>
           </section>
+          </div>
         </div>
       </main>
 
