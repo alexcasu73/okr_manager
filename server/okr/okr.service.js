@@ -1300,11 +1300,10 @@ export async function approveObjective(pool, objectiveId, approverId, comment = 
 
     const { owner_id, title } = rows[0];
 
-    // Update approval status and status
+    // Update approval status
     await client.query(
       `UPDATE objectives
        SET approval_status = 'approved',
-           status = 'approved',
            approved_by = $2,
            approved_at = NOW(),
            updated_at = NOW()
